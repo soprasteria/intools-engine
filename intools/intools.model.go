@@ -3,8 +3,8 @@ package intools
 import (
 	"time"
 
-	"github.com/soprasteria/intools-engine/common/utils"
 	"github.com/samalba/dockerclient"
+	"github.com/soprasteria/intools-engine/common/utils"
 	. "gopkg.in/redis.v3"
 	"gopkg.in/robfig/cron.v2"
 )
@@ -161,7 +161,7 @@ type RedisWrapper interface {
 	DbSize() *IntCmd
 	FlushAll() *StatusCmd
 	FlushDb() *StatusCmd
-	Info() *StringCmd
+	Info(keys ...string) *StringCmd
 	LastSave() *IntCmd
 	Save() *StatusCmd
 	Shutdown() *StatusCmd

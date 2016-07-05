@@ -11,6 +11,8 @@ go get -u "github.com/samalba/dockerclient"
 go get -u "gopkg.in/redis.v3"
 go get -u "github.com/gorilla/websocket"
 go get -u "github.com/gin-gonic/contrib/expvar"
+go get -u "github.com/onsi/ginkgo"
+go get -u "github.com/onsi/gomega"
 ````
 ## Environment Dependencies
  - Docker Host (version 1.5 min)

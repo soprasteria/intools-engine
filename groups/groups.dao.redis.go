@@ -1,7 +1,11 @@
 package groups
 
-import "github.com/soprasteria/intools-engine/intools"
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/soprasteria/intools-engine/intools"
+)
+
 import "github.com/soprasteria/intools-engine/common/logs"
 
 func GetRedisGroupsKey() string {
@@ -23,7 +27,11 @@ func RedisGetLength() (int64, error) {
 
 func RedisGetGroups() ([]string, error) {
 	r := intools.Engine.GetRedisClient()
-	len, err := r.LLen(GetRedisGroupsKey()).Result()
+	groupLength := r.LLen(GetRedisGroupsKey())
+	if groupLength == nil {
+		return []string{}, nil
+	}
+	len, err := groupLength.Result()
 	if err != nil {
 		return nil, err
 	}

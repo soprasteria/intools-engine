@@ -10,7 +10,7 @@ type IntoolsEngineMock struct {
 	DockerHost   string
 	RedisClient  intools.RedisWrapper
 	Cron         intools.CronWrapper
-  Auth         *dockerclient.AuthConfig
+	Auth         *dockerclient.AuthConfig
 }
 
 func (e *IntoolsEngineMock) GetDockerClient() dockerclient.Client {
@@ -29,6 +29,6 @@ func (e *IntoolsEngineMock) GetCron() intools.CronWrapper {
 	return e.GetCron()
 }
 
-func (e *IntoolsEngineImpl) GetDockerAuth() *dockerclient.AuthConfig  {
+func (e *IntoolsEngineMock) GetDockerAuth() *dockerclient.AuthConfig {
 	return e.Auth
 }
