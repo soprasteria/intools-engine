@@ -1,8 +1,8 @@
 package websocket
 
 import (
-	"github.com/fsamin/intools-engine/common/logs"
-	"github.com/fsamin/intools-engine/common/utils"
+	"github.com/soprasteria/intools-engine/common/logs"
+	"github.com/soprasteria/intools-engine/common/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )

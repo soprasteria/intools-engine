@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fsamin/intools-engine/common/logs"
-	"github.com/fsamin/intools-engine/executors"
-	"github.com/fsamin/intools-engine/intools"
+	"github.com/soprasteria/intools-engine/common/logs"
+	"github.com/soprasteria/intools-engine/executors"
+	"github.com/soprasteria/intools-engine/intools"
 	"gopkg.in/robfig/cron.v2"
 	"strconv"
 )

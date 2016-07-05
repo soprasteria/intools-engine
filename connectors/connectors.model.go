@@ -2,8 +2,8 @@ package connectors
 
 import (
 	"encoding/json"
-	"github.com/fsamin/intools-engine/common/logs"
-	"github.com/fsamin/intools-engine/executors"
+	"github.com/soprasteria/intools-engine/common/logs"
+	"github.com/soprasteria/intools-engine/executors"
 	"github.com/samalba/dockerclient"
 )
 

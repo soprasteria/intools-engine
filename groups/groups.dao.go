@@ -1,8 +1,8 @@
 package groups
 
 import (
-	"github.com/fsamin/intools-engine/common/logs"
-	"github.com/fsamin/intools-engine/connectors"
+	"github.com/soprasteria/intools-engine/common/logs"
+	"github.com/soprasteria/intools-engine/connectors"
 )
 
 func GetGroup(name string, withConnectors bool) *Group {

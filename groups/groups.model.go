@@ -1,7 +1,7 @@
 package groups
 
 import (
-	"github.com/fsamin/intools-engine/connectors"
+	"github.com/soprasteria/intools-engine/connectors"
 )
 
 type Group struct {

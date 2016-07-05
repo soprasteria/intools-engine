@@ -14,7 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/codegangsta/cli"
-	"github.com/fsamin/intools-engine/common/logs"
+	"github.com/soprasteria/intools-engine/common/logs"
 	"github.com/samalba/dockerclient"
 	"gopkg.in/redis.v3"
 )

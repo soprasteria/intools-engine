@@ -1,13 +1,13 @@
 package groups_test
 
 import (
-	"github.com/fsamin/intools-engine/common/tests"
+	"github.com/soprasteria/intools-engine/common/tests"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/samalba/dockerclient/mockclient"
 
-	"github.com/fsamin/intools-engine/groups"
-	"github.com/fsamin/intools-engine/intools"
+	"github.com/soprasteria/intools-engine/groups"
+	"github.com/soprasteria/intools-engine/intools"
 	"github.com/samalba/dockerclient"
 )
 

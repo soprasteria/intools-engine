@@ -1,7 +1,7 @@
 package connectors
 
 import (
-	"github.com/fsamin/intools-engine/common/logs"
+	"github.com/soprasteria/intools-engine/common/logs"
 	"github.com/gin-gonic/gin"
 )
 

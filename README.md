@@ -9,7 +9,8 @@ go get -u "github.com/gin-gonic/gin"
 go get -u "gopkg.in/robfig/cron.v2"
 go get -u "github.com/samalba/dockerclient"
 go get -u "gopkg.in/redis.v3"
-go get -u github.com/gorilla/websocket
+go get -u "github.com/gorilla/websocket"
+go get -u "github.com/gin-gonic/contrib/expvar"
 ````
 ## Environment Dependencies
  - Docker Host (version 1.5 min)

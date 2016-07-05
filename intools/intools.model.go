@@ -3,7 +3,7 @@ package intools
 import (
 	"time"
 
-	"github.com/fsamin/intools-engine/common/utils"
+	"github.com/soprasteria/intools-engine/common/utils"
 	"github.com/samalba/dockerclient"
 	. "gopkg.in/redis.v3"
 	"gopkg.in/robfig/cron.v2"

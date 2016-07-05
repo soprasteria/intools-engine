@@ -3,11 +3,11 @@ package server
 import (
 	"fmt"
 
-	"github.com/fsamin/intools-engine/common/logs"
-	"github.com/fsamin/intools-engine/common/websocket"
-	"github.com/fsamin/intools-engine/connectors"
-	"github.com/fsamin/intools-engine/groups"
-	"github.com/fsamin/intools-engine/intools"
+	"github.com/soprasteria/intools-engine/common/logs"
+	"github.com/soprasteria/intools-engine/common/websocket"
+	"github.com/soprasteria/intools-engine/connectors"
+	"github.com/soprasteria/intools-engine/groups"
+	"github.com/soprasteria/intools-engine/intools"
 	"github.com/gin-gonic/gin"
 	"github.com/samalba/dockerclient"
 	"gopkg.in/redis.v3"
