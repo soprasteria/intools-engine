@@ -23,7 +23,10 @@ node{
         go build
       '''
     stage 'Test'
-      sh 'go test ./...'
+      sh '''
+        go get -t
+        go test ./...
+      '''
     stage 'Package'
       // TODO
       if (env.BRANCH_NAME == "master") {
