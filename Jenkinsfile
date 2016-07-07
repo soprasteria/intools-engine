@@ -28,7 +28,7 @@ node{
         go test ./...
       '''
     stage 'Package'
-      // TODO
+      // TODO package application
       if (env.BRANCH_NAME == "master") {
         stage 'Publish'
         // TODO upload to artifactory
