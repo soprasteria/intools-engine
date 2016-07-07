@@ -20,7 +20,7 @@ node{
     stage 'Compile'
       sh '''
         go get -v
-        go build ./...
+        go build
       '''
     stage 'Test'
       sh '''
