@@ -15,11 +15,13 @@ node{
     env.GOPATH = pwd()
   stage 'Checkout'
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '9ec20a0a-6264-4217-8ac0-11df115c70cc', passwordVariable: 'GITHUB_ACCESS_TOKEN', usernameVariable: 'GITHUB_LOGIN']]) {
+      env.GITHUB_URL = "https://" + GITHUB_LOGIN + ":" + GITHUB_ACCESS_TOKEN + "@github.com/soprasteria/intools-engine.git"
+      git config --global credential.helper cache
       // Checkout the given branch in a sub directory
       checkout([$class: 'GitSCM',
                 branches: [[name: '${BRANCH_NAME}']],
                 extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'src/github.com/soprasteria/intools-engine'], [$class: 'LocalBranch', localBranch: '${BRANCH_NAME}']],
-                userRemoteConfigs: [[url: 'https://vincentdaniel:bdcbd185835c3821d6b85688038a402b80fbe406@github.com/soprasteria/intools-engine.git']]])
+                userRemoteConfigs: [[url: env.GITHUB_URL]]])
     }
   dir(env.INTOOLS_BUILD){
     stage 'Compile'
