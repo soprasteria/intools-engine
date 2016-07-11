@@ -25,6 +25,7 @@ _testmain.go
 
 .idea
 intools-engine
+intools-engine-*.tgz
 intools-engine.iml
 
 _builds/
