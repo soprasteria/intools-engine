@@ -15,7 +15,11 @@ node{
     env.GOPATH = pwd()
   stage 'Checkout'
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '9ec20a0a-6264-4217-8ac0-11df115c70cc', passwordVariable: 'GITHUB_ACCESS_TOKEN', usernameVariable: 'GITHUB_LOGIN']]) {
+<<<<<<< HEAD
       git config --global credential.helper cache
+=======
+      sh 'git config --global credential.helper cache'
+>>>>>>> develop
       // Checkout the given branch in a sub directory
       checkout([$class: 'GitSCM',
                 branches: [[name: '${BRANCH_NAME}']],
