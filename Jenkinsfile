@@ -14,12 +14,12 @@ node{
     env.GOROOT = "$goTool"
     env.GOPATH = pwd()
   stage 'Checkout'
-    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '9ec20a0a-6264-4217-8ac0-11df115c70cc', passwordVariable: 'GITHUB_ACCESS_TOKEN', usernameVariable: '']]) {
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '9ec20a0a-6264-4217-8ac0-11df115c70cc', passwordVariable: 'GITHUB_ACCESS_TOKEN', usernameVariable: 'GITHUB_LOGIN']]) {
       // Checkout the given branch in a sub directory
       checkout([$class: 'GitSCM',
                 branches: [[name: '${BRANCH_NAME}']],
                 extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'src/github.com/soprasteria/intools-engine'], [$class: 'LocalBranch', localBranch: '${BRANCH_NAME}']],
-                userRemoteConfigs: [[url: 'https://${GITHUB_ACCESS_TOKEN}:x-oauth-basic@github.com/soprasteria/intools-engine.git']]])
+                userRemoteConfigs: [[url: 'https://${GITHUB_LOGIN}:${GITHUB_ACCESS_TOKEN}@github.com/soprasteria/intools-engine.git']]])
     }
   dir(env.INTOOLS_BUILD){
     stage 'Compile'
