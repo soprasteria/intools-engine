@@ -52,7 +52,7 @@ node{
 
               current_dir=`pwd`
               export FILE="$current_dir/$tarname"
-              curl -v -u$ARTIFACTORY_CREDENTIALS --data-binary @${FILE} -X PUT $ARTIFACTORY_URL/prj-cdk-releases/com/soprasteria/cdk/intools2/intools-engine/$tarname
+              curl -v -u$ARTIFACTORY_CREDENTIALS --data-binary @"${FILE}" -X PUT $ARTIFACTORY_URL/prj-cdk-releases/com/soprasteria/cdk/intools2/intools-engine/$tarname
 
               majorversion=`echo $version | cut -d '.' -f 1`
               minorversion=`echo $version | cut -d '.' -f 2`
