@@ -20,7 +20,7 @@ node{
       checkout([$class: 'GitSCM',
                 branches: [[name: '${BRANCH_NAME}']],
                 extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'src/github.com/soprasteria/intools-engine'], [$class: 'LocalBranch', localBranch: '${BRANCH_NAME}']],
-                userRemoteConfigs: [[url: 'git@github.com:soprasteria/intools-engine.git']]])
+                userRemoteConfigs: [[url: 'https://${GITHUB_LOGIN}:${GITHUB_ACCESS_TOKEN}@github.com/soprasteria/intools-engine.git']]])
     }
   dir(env.INTOOLS_BUILD){
     stage 'Compile'
@@ -50,7 +50,8 @@ node{
               git tag -af $version -m "version $version"
               git push -f origin $version
 
-              export FILE=`pwd`/$tarname
+              current_dir=`pwd`
+              export FILE="$current_dir/$tarname"
               curl -v -u$ARTIFACTORY_CREDENTIALS --data-binary @${FILE} -X PUT $ARTIFACTORY_URL/prj-cdk-releases/com/soprasteria/cdk/intools2/intools-engine/$tarname
 
               majorversion=`echo $version | cut -d '.' -f 1`
