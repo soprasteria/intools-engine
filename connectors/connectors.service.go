@@ -3,15 +3,16 @@ package connectors
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
+	"time"
+
+	"github.com/samalba/dockerclient"
 	"github.com/soprasteria/intools-engine/common/logs"
 	"github.com/soprasteria/intools-engine/common/utils"
 	"github.com/soprasteria/intools-engine/common/websocket"
 	"github.com/soprasteria/intools-engine/executors"
 	"github.com/soprasteria/intools-engine/intools"
-	"github.com/samalba/dockerclient"
 	"gopkg.in/robfig/cron.v2"
-	"sync"
-	"time"
 )
 
 func InitSchedule(c *Connector) cron.EntryID {
@@ -65,6 +66,15 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 			logs.Error.Println(err)
 			return nil, err
 		}
+	}
+
+	// Pulls the image
+	logs.Debug.Println("Pulling image ", connector.ContainerConfig.Image)
+	err = intools.Engine.GetDockerClient().PullImage(connector.ContainerConfig.Image, intools.Engine.GetDockerAuth())
+	if err != nil {
+		logs.Error.Println("Cannot pull image " + connector.ContainerConfig.Image + " for container " + connector.GetContainerName())
+		logs.Error.Println(err)
+		return nil, err
 	}
 
 	//Create container
@@ -157,6 +167,7 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 		if err != nil {
 			return executor, err
 		} else {
+			logs.Debug.Printf("container logs %s", containerLogs)
 			executor.Stdout = containerLogs
 			executor.JsonStdout = new(map[string]interface{})
 			errJsonStdOut := json.Unmarshal([]byte(executor.Stdout), executor.JsonStdout)
