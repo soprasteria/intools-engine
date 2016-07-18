@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/fsouza/go-dockerclient"
-	"github.com/soprasteria/dockerapi"
 	"github.com/soprasteria/intools-engine/common/logs"
 	"github.com/soprasteria/intools-engine/common/websocket"
 	"github.com/soprasteria/intools-engine/executors"
@@ -70,15 +69,6 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 		}
 	}
 
-	// Pulls the image
-	logs.Debug.Println("Pulling image ", connector.ContainerConfig.Image)
-	err = intools.Engine.GetDockerClient().PullImage(connector.ContainerConfig.Image)
-	if err != nil {
-		logs.Error.Println("Cannot pull image " + connector.ContainerConfig.Image + " for container " + connector.GetContainerName())
-		logs.Error.Println(err)
-		return nil, err
-	}
-
 	//Create container
 	logs.Debug.Println("New container with config ", connector.ContainerConfig)
 	container, err := intools.Engine.GetDockerClient().NewContainer(*connector.ContainerConfig)
@@ -88,23 +78,21 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 		return nil, err
 	}
 	//Save the short ContainerId
-	executor.ContainerId = container.ID()[:11]
 	executor.Host = intools.Engine.GetDockerHost()
 
-	logs.Trace.Printf("%s [/%s] successfully created", executor.ContainerId, connector.GetContainerName())
+	// Starting container
+	err = container.Run()
+	if err != nil {
+		logs.Error.Println("Cannot start container " + connector.GetContainerName())
+		logs.Error.Println(err)
+		return nil, err
+	}
 
 	//Prepare the waiting group to sync execution of the container
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	//Start the container
-	err = container.Start()
-	if err != nil {
-		logs.Error.Println("Cannot start container " + executor.ContainerId)
-		logs.Error.Println(err)
-		return nil, err
-	}
-
+	executor.ContainerId = container.ID()[:11]
 	logs.Trace.Printf("%s [/%s] successfully started", executor.ContainerId, connector.GetContainerName())
 	logs.Debug.Println(executor.ContainerId + " will be stopped after " + fmt.Sprint(connector.Timeout) + " seconds")
 	//Trigger stop of the container after the timeout
@@ -142,23 +130,20 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 	wg.Wait()
 
 	stdoutBuf := new(bytes.Buffer)
-	logStdOutOptions := dockerapi.LogsOptions{
-		OutputStream: stdoutBuf,
-		Stdout:       true,
-		Stderr:       false,
-		Tail:         "all",
-	}
-
 	stderrBuf := new(bytes.Buffer)
-	logStdErrOptions := dockerapi.LogsOptions{
-		OutputStream: stderrBuf,
-		Stdout:       false,
+	logOptions := docker.LogsOptions{
+		Container:    container.ID(),
+		OutputStream: stdoutBuf,
+		ErrorStream:  stderrBuf,
+		Stdout:       true,
 		Stderr:       true,
 		Tail:         "all",
+		Follow:       true,
+		Timestamps:   false,
 	}
 
 	//Get the stdout and stderr
-	err = container.Logs(logStdOutOptions)
+	err = intools.Engine.GetDockerClient().Docker.Logs(logOptions)
 
 	if err != nil {
 		logs.Error.Println("-cannot read stdout logs from server")
@@ -167,7 +152,7 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 		logs.Debug.Printf("container logs %s", containerLogs)
 		executor.Stdout = containerLogs
 		executor.JsonStdout = new(map[string]interface{})
-		errJSONStdOut := json.Unmarshal([]byte(executor.Stdout), executor.JsonStdout)
+		errJSONStdOut := json.Unmarshal(stdoutBuf.Bytes(), executor.JsonStdout)
 		executor.Valid = true
 
 		if errJSONStdOut != nil {
@@ -175,11 +160,15 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 			logs.Warning.Println(errJSONStdOut)
 		}
 
-		err = container.Logs(logStdErrOptions)
-		if err != nil {
-			return executor, err
-		}
 		executor.Stderr = stderrBuf.String()
+	}
+
+	removeVolumes := false
+	err = container.Remove(removeVolumes)
+	if err != nil {
+		logs.Error.Println("Cannot remove container " + container.Name())
+		logs.Error.Println(err)
+		return nil, err
 	}
 
 	// Broadcast result to registered clients

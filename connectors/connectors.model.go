@@ -43,7 +43,7 @@ func (c *Connector) Init(image string, timeout uint, refresh uint, cmd []string)
 }
 
 func (c *Connector) GetContainerName() string {
-	return c.Group + "-" + c.Name
+	return c.ContainerConfig.Name
 }
 
 func (c *Connector) GetJSON() string {
