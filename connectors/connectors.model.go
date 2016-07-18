@@ -2,17 +2,18 @@ package connectors
 
 import (
 	"encoding/json"
+
+	"github.com/soprasteria/dockerapi"
 	"github.com/soprasteria/intools-engine/common/logs"
 	"github.com/soprasteria/intools-engine/executors"
-	"github.com/samalba/dockerclient"
 )
 
 type Connector struct {
-	Group           string                        `json:"group"`
-	Name            string                        `json:"name"`
-	ContainerConfig *dockerclient.ContainerConfig `json:"config"`
-	Timeout         int                           `json:"timeout,omitempty"`
-	Refresh         int                           `json:"refresh,omitempty"`
+	Group           string                      `json:"group"`
+	Name            string                      `json:"name"`
+	ContainerConfig *dockerapi.ContainerOptions `json:"config"`
+	Timeout         uint                        `json:"timeout,omitempty"`
+	Refresh         uint                        `json:"refresh,omitempty"`
 }
 
 type ConnectorRunner interface {
@@ -24,15 +25,12 @@ func NewConnector(group string, name string) *Connector {
 	return conn
 }
 
-func (c *Connector) Init(image string, timeout int, refresh int, cmd []string) {
+func (c *Connector) Init(image string, timeout uint, refresh uint, cmd []string) {
 	if c.ContainerConfig == nil {
-		c.ContainerConfig = &dockerclient.ContainerConfig{
-			Image:        image,
-			Cmd:          cmd,
-			AttachStdin:  false,
-			AttachStdout: false,
-			AttachStderr: false,
-			Tty:          false,
+		c.ContainerConfig = &dockerapi.ContainerOptions{
+			Image: image,
+			Cmd:   cmd,
+			Name:  c.Name,
 		}
 	}
 

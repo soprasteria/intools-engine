@@ -14,8 +14,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/codegangsta/cli"
+	"github.com/soprasteria/dockerapi"
 	"github.com/soprasteria/intools-engine/common/logs"
-	"github.com/samalba/dockerclient"
 	"gopkg.in/redis.v3"
 )
 
@@ -74,16 +74,6 @@ func GetRedis(c *cli.Context) (*redis.Client, error) {
 	return client, err
 }
 
-func GetDockerAuth(c *cli.Context) *dockerclient.AuthConfig {
-	auth := &dockerclient.AuthConfig{
-		c.GlobalString("registry-username"),
-		c.GlobalString("registry-password"),
-		c.GlobalString("registry-mail"),
-		c.GlobalString("registry-token"),
-	}
-	return auth
-}
-
 func GetRedisClient() (*redis.Client, error) {
 	client := redis.NewClient(redisOptions)
 
@@ -96,7 +86,7 @@ func GetRedisClient() (*redis.Client, error) {
 	return client, nil
 }
 
-func GetDockerCient(c *cli.Context) (*dockerclient.DockerClient, string, error) {
+func GetDockerCient(c *cli.Context) (*dockerapi.Client, string, error) {
 	host := c.GlobalString("host")
 	if host == "" {
 		logs.Error.Println("Incorrect usage, please set the docker host")
@@ -136,23 +126,29 @@ func GetDockerCient(c *cli.Context) (*dockerclient.DockerClient, string, error) 
 		tlsConfig.Certificates = []tls.Certificate{cert}
 		tlsConfig.RootCAs.AppendCertsFromPEM(pemCerts)
 	}
-	docker, err := dockerclient.NewDockerClient(host, tlsConfig)
+	var dockerClient *dockerapi.Client
+	var err error
+	if certPath == "" {
+		dockerClient, err = dockerapi.NewClient(host)
+	} else {
+		dockerClient, err = dockerapi.NewClient(host)
+	}
 	if err != nil {
 		logs.Error.Println("Unable to connect to docker host")
 		return nil, host, err
 	}
-	version, err := docker.Version()
+	env, err := dockerClient.Docker.Version()
 	if err != nil {
 		logs.Error.Println("Unable to ping docker host")
 		logs.Error.Println(err)
 		return nil, host, err
 	}
 	logs.Trace.Println("Connected to Docker Host " + host)
-	logs.Debug.Println("Docker Version: " + version.Version)
-	logs.Debug.Println("Git Commit:" + version.GitCommit)
-	logs.Debug.Println("Go Version:" + version.GoVersion)
+	logs.Debug.Println("Docker Version: " + env.Get("Version"))
+	logs.Debug.Println("Git Commit:" + env.Get("GitCommit"))
+	logs.Debug.Println("Go Version:" + env.Get("GoVersion"))
 
-	return docker, host, err
+	return dockerClient, host, err
 }
 
 func Contains(slice []string, item string) bool {

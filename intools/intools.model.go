@@ -3,18 +3,17 @@ package intools
 import (
 	"time"
 
-	"github.com/samalba/dockerclient"
+	"github.com/soprasteria/dockerapi"
 	"github.com/soprasteria/intools-engine/common/utils"
 	. "gopkg.in/redis.v3"
 	"gopkg.in/robfig/cron.v2"
 )
 
 type IntoolsEngine interface {
-	GetDockerClient() dockerclient.Client
+	GetDockerClient() *dockerapi.Client
 	GetDockerHost() string
 	GetRedisClient() RedisWrapper
 	GetCron() CronWrapper
-	GetDockerAuth() *dockerclient.AuthConfig
 }
 
 type CronWrapper interface {
@@ -192,14 +191,13 @@ type RedisWrapper interface {
 }
 
 type IntoolsEngineImpl struct {
-	DockerClient dockerclient.Client
+	DockerClient *dockerapi.Client
 	DockerHost   string
 	RedisClient  RedisWrapper
 	Cron         CronWrapper
-	Auth         *dockerclient.AuthConfig
 }
 
-func (e *IntoolsEngineImpl) GetDockerClient() dockerclient.Client {
+func (e *IntoolsEngineImpl) GetDockerClient() *dockerapi.Client {
 	return e.DockerClient
 }
 
@@ -221,10 +219,6 @@ func (e *IntoolsEngineImpl) GetRedisClient() RedisWrapper {
 
 func (e *IntoolsEngineImpl) GetCron() CronWrapper {
 	return e.Cron
-}
-
-func (e *IntoolsEngineImpl) GetDockerAuth() *dockerclient.AuthConfig {
-	return e.Auth
 }
 
 var (
