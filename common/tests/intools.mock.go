@@ -1,34 +1,29 @@
 package tests
 
 import (
-	"github.com/samalba/dockerclient"
+	"github.com/soprasteria/dockerapi"
 	"github.com/soprasteria/intools-engine/intools"
 )
 
 type IntoolsEngineMock struct {
-	DockerClient dockerclient.Client
+	DockerClient dockerapi.Client
 	DockerHost   string
 	RedisClient  intools.RedisWrapper
 	Cron         intools.CronWrapper
-	Auth         *dockerclient.AuthConfig
 }
 
-func (e *IntoolsEngineMock) GetDockerClient() dockerclient.Client {
-	return e.DockerClient
+func (e IntoolsEngineMock) GetDockerClient() *dockerapi.Client {
+	return &e.DockerClient
 }
 
-func (e *IntoolsEngineMock) GetDockerHost() string {
+func (e IntoolsEngineMock) GetDockerHost() string {
 	return e.DockerHost
 }
 
-func (e *IntoolsEngineMock) GetRedisClient() intools.RedisWrapper {
+func (e IntoolsEngineMock) GetRedisClient() intools.RedisWrapper {
 	return e.RedisClient
 }
 
-func (e *IntoolsEngineMock) GetCron() intools.CronWrapper {
+func (e IntoolsEngineMock) GetCron() intools.CronWrapper {
 	return e.GetCron()
-}
-
-func (e *IntoolsEngineMock) GetDockerAuth() *dockerclient.AuthConfig {
-	return e.Auth
 }

@@ -3,10 +3,9 @@ package groups_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/samalba/dockerclient/mockclient"
+	"github.com/soprasteria/dockerapi"
 	"github.com/soprasteria/intools-engine/common/tests"
 
-	"github.com/samalba/dockerclient"
 	"github.com/soprasteria/intools-engine/groups"
 	"github.com/soprasteria/intools-engine/intools"
 )
@@ -14,18 +13,17 @@ import (
 var _ = Describe("Groups", func() {
 
 	var (
-		engine *tests.IntoolsEngineMock
+		engine tests.IntoolsEngineMock
 		cron   tests.CronMock
 		redis  intools.RedisWrapper
-		docker dockerclient.Client
-		auth   *dockerclient.AuthConfig
+		docker dockerapi.Client
 	)
 
 	BeforeEach(func() {
 		cron = tests.CronMock{}
 		redis = &tests.RedisClientMock{}
-		docker = &mockclient.MockClient{}
-		engine = &tests.IntoolsEngineMock{DockerClient: docker, DockerHost: "mock.local:2576", RedisClient: redis, Cron: &cron, Auth: auth}
+		docker = dockerapi.Client{}
+		engine = tests.IntoolsEngineMock{DockerClient: docker, DockerHost: "mock.local:2576", RedisClient: redis, Cron: &cron}
 
 		intools.Engine = engine
 	})
