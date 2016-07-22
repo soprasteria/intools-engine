@@ -1,17 +1,18 @@
 package connectors
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"sync"
+	"time"
+
+	"github.com/fsouza/go-dockerclient"
 	"github.com/soprasteria/intools-engine/common/logs"
-	"github.com/soprasteria/intools-engine/common/utils"
 	"github.com/soprasteria/intools-engine/common/websocket"
 	"github.com/soprasteria/intools-engine/executors"
 	"github.com/soprasteria/intools-engine/intools"
-	"github.com/samalba/dockerclient"
 	"gopkg.in/robfig/cron.v2"
-	"sync"
-	"time"
 )
 
 func InitSchedule(c *Connector) cron.EntryID {
@@ -38,7 +39,7 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 	go SaveConnector(connector)
 
 	//Get all containers
-	containers, err := intools.Engine.GetDockerClient().ListContainers(true, false, "")
+	containers, err := intools.Engine.GetDockerClient().ListContainers()
 	if err != nil {
 		logs.Error.Println(err)
 		return nil, err
@@ -46,76 +47,74 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 
 	//Searching for the container with the same name
 	containerExists := false
-	previousContainerId := "-1"
+	previousContainerID := "-1"
 	for _, c := range containers {
-		for _, n := range c.Names {
+		for _, n := range c.Container.Names {
 			if n == fmt.Sprintf("/%s", connector.GetContainerName()) {
 				containerExists = true
-				previousContainerId = c.Id
+				previousContainerID = c.ID()
 			}
 		}
 	}
 
 	//If it exists, remove it
 	if containerExists {
-		logs.Trace.Printf("Removing container %s [/%s]", previousContainerId[:11], connector.GetContainerName())
-		err := intools.Engine.GetDockerClient().RemoveContainer(previousContainerId, true, true)
+		logs.Trace.Printf("Removing container %s [/%s]", previousContainerID[:11], connector.GetContainerName())
+		removeContainerOptions := docker.RemoveContainerOptions{ID: previousContainerID, RemoveVolumes: true, Force: true}
+		err = intools.Engine.GetDockerClient().Docker.RemoveContainer(removeContainerOptions)
 		if err != nil {
-			logs.Error.Println("Cannot remove container " + previousContainerId[:11])
+			logs.Error.Println("Cannot remove container " + previousContainerID[:11])
 			logs.Error.Println(err)
 			return nil, err
 		}
 	}
 
 	//Create container
-	logs.Debug.Println("ContainerConfig ", connector.ContainerConfig)
-	ContainerId, err := intools.Engine.GetDockerClient().CreateContainer(connector.ContainerConfig, connector.GetContainerName(), intools.Engine.GetDockerAuth())
+	logs.Debug.Println("New container with config ", connector.ContainerConfig)
+	container, err := intools.Engine.GetDockerClient().NewContainer(*connector.ContainerConfig)
 	if err != nil {
 		logs.Error.Println("Cannot create container " + connector.GetContainerName())
 		logs.Error.Println(err)
 		return nil, err
 	}
 	//Save the short ContainerId
-	executor.ContainerId = ContainerId[:11]
 	executor.Host = intools.Engine.GetDockerHost()
 
-	logs.Trace.Printf("%s [/%s] successfully created", executor.ContainerId, connector.GetContainerName())
-	hostConfig := &dockerclient.HostConfig{}
+	// Starting container
+	err = container.Run()
+	if err != nil {
+		logs.Error.Println("Cannot start container " + connector.GetContainerName())
+		logs.Error.Println(err)
+		return nil, err
+	}
 
 	//Prepare the waiting group to sync execution of the container
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	//Start the container
-	err = intools.Engine.GetDockerClient().StartContainer(ContainerId, hostConfig)
-	if err != nil {
-		logs.Error.Println("Cannot start container " + executor.ContainerId)
-		logs.Error.Println(err)
-		return nil, err
-	}
-
+	executor.ContainerId = container.ID()[:11]
 	logs.Trace.Printf("%s [/%s] successfully started", executor.ContainerId, connector.GetContainerName())
 	logs.Debug.Println(executor.ContainerId + " will be stopped after " + fmt.Sprint(connector.Timeout) + " seconds")
 	//Trigger stop of the container after the timeout
-	intools.Engine.GetDockerClient().StopContainer(ContainerId, connector.Timeout)
+	intools.Engine.GetDockerClient().Docker.StopContainer(container.ID(), connector.Timeout)
 
 	//Wait for the end of the execution of the container
 	for {
 		//Each time inspect the container
-		inspect, err := intools.Engine.GetDockerClient().InspectContainer(ContainerId)
+		inspect, err := intools.Engine.GetDockerClient().InspectContainer(container.ID())
 		if err != nil {
 			logs.Error.Println("Cannot inpect container " + executor.ContainerId)
 			logs.Error.Println(err)
 			return executor, err
 		}
-		if !inspect.State.Running {
+		if !inspect.IsRunning() {
 			//When the container is not running
 			logs.Debug.Println(executor.ContainerId + " is stopped")
 			executor.Running = false
 			executor.Terminated = true
-			executor.ExitCode = inspect.State.ExitCode
-			executor.StartedAt = inspect.State.StartedAt
-			executor.FinishedAt = inspect.State.FinishedAt
+			executor.ExitCode = inspect.Container.State.ExitCode
+			executor.StartedAt = inspect.Container.State.StartedAt
+			executor.FinishedAt = inspect.Container.State.FinishedAt
 			//Trigger next part of the waiting group
 			wg.Done()
 			//Exit from the waiting loop
@@ -130,48 +129,46 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 	//Next part : after the container has been executed
 	wg.Wait()
 
-	logStdOutOptions := &dockerclient.LogOptions{
-		Follow:     true,
-		Stdout:     true,
-		Stderr:     false,
-		Timestamps: false,
-		Tail:       0,
-	}
-
-	logStdErrOptions := &dockerclient.LogOptions{
-		Follow:     true,
-		Stdout:     false,
-		Stderr:     true,
-		Timestamps: false,
-		Tail:       0,
+	stdoutBuf := new(bytes.Buffer)
+	stderrBuf := new(bytes.Buffer)
+	logOptions := docker.LogsOptions{
+		Container:    container.ID(),
+		OutputStream: stdoutBuf,
+		ErrorStream:  stderrBuf,
+		Stdout:       true,
+		Stderr:       true,
+		Tail:         "all",
+		Follow:       true,
+		Timestamps:   false,
 	}
 
 	//Get the stdout and stderr
-	logsStdOutReader, err := intools.Engine.GetDockerClient().ContainerLogs(ContainerId, logStdOutOptions)
-	logsStdErrReader, err := intools.Engine.GetDockerClient().ContainerLogs(ContainerId, logStdErrOptions)
+	err = intools.Engine.GetDockerClient().Docker.Logs(logOptions)
 
 	if err != nil {
-		logs.Error.Println("-cannot read logs from server")
+		logs.Error.Println("-cannot read stdout logs from server")
 	} else {
-		containerLogs, err := utils.ReadLogs(logsStdOutReader)
-		if err != nil {
-			return executor, err
-		} else {
-			executor.Stdout = containerLogs
-			executor.JsonStdout = new(map[string]interface{})
-			errJsonStdOut := json.Unmarshal([]byte(executor.Stdout), executor.JsonStdout)
-			executor.Valid = true
-			if errJsonStdOut != nil {
-				logs.Warning.Printf("Unable to parse stdout from container %s", executor.ContainerId)
-				logs.Warning.Println(errJsonStdOut)
-			}
+		containerLogs := stdoutBuf.String()
+		logs.Debug.Printf("container logs %s", containerLogs)
+		executor.Stdout = containerLogs
+		executor.JsonStdout = new(map[string]interface{})
+		errJSONStdOut := json.Unmarshal(stdoutBuf.Bytes(), executor.JsonStdout)
+		executor.Valid = true
+
+		if errJSONStdOut != nil {
+			logs.Warning.Printf("Unable to parse stdout from container %s", executor.ContainerId)
+			logs.Warning.Println(errJSONStdOut)
 		}
-		containerLogs, err = utils.ReadLogs(logsStdErrReader)
-		if err != nil {
-			return executor, err
-		} else {
-			executor.Stderr = containerLogs
-		}
+
+		executor.Stderr = stderrBuf.String()
+	}
+
+	removeVolumes := false
+	err = container.Remove(removeVolumes)
+	if err != nil {
+		logs.Error.Println("Cannot remove container " + container.Name())
+		logs.Error.Println(err)
+		return nil, err
 	}
 
 	// Broadcast result to registered clients
