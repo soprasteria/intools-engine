@@ -26,7 +26,7 @@ node{
     stage 'Compile'
       sh '''
         go get -v
-        go build
+        CGO_ENABLED=0 go build -a -installsuffix cgo
       '''
     stage 'Test'
       sh '''
