@@ -2,6 +2,7 @@ package connectors
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/soprasteria/dockerapi"
 	"github.com/soprasteria/intools-engine/common/logs"
@@ -58,5 +59,19 @@ func (c *Connector) GetJSON() string {
 func (c *Connector) Run() {
 	//TODO : Should not run error, or invalid connector ?
 	logs.Debug.Printf("Run Connector %s:%s", c.Group, c.Name)
+	addQuotes(c.ContainerConfig)
 	Exec(c)
+}
+
+func addQuotes(c *dockerapi.ContainerOptions) {
+	var quotedCmd = make([]string, len(c.Cmd))
+	for i, arg := range c.Cmd {
+		if !strings.HasPrefix(arg, "\"") {
+			quotedCmd[i] = "\"" + arg + "\""
+		} else {
+			quotedCmd[i] = arg
+		}
+	}
+	c.Cmd = quotedCmd
+	logs.Debug.Printf("Connector started with parameters = %s", quotedCmd)
 }
