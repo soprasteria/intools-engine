@@ -156,8 +156,8 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 		executor.Valid = true
 
 		if errJSONStdOut != nil {
-			logs.Warning.Printf("Unable to parse stdout from container %s", executor.ContainerId)
-			logs.Warning.Println(errJSONStdOut)
+			logs.Warning.Printf("Unable to parse stdout from container %s", container.Name())
+			logs.Warning.Printf("Error: %s - Stdout: %s", errJSONStdOut, containerLogs)
 		}
 
 		executor.Stderr = stderrBuf.String()
