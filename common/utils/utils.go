@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/codegangsta/cli"
+	"github.com/gin-gonic/gin"
 	"github.com/soprasteria/dockerapi"
 	"github.com/soprasteria/intools-engine/common/logs"
 	"gopkg.in/redis.v3"
@@ -168,4 +169,18 @@ func IndexOf(slice []string, item string) (ind int, ok bool) {
 		}
 	}
 	return ind, false
+}
+
+func HandleError(message string, err error, c *gin.Context) map[string]string {
+	logs.Warning.Println("*******************************************************************************")
+	logs.Warning.Println("RemoteAddr :\t" + c.Request.RemoteAddr)
+	logs.Warning.Println("RequestURI :\t" + c.Request.RequestURI)
+	logs.Warning.Println("Message :\t" + message)
+	logs.Warning.Println("Error :\t" + err.Error())
+	logs.Warning.Println("*******************************************************************************")
+
+	return map[string]string{
+		"message": message,
+		"details": err.Error(),
+	}
 }

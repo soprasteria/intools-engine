@@ -53,10 +53,11 @@ func (d *Daemon) Run() {
 	d.Engine.Run(fmt.Sprintf("0.0.0.0:%d", d.Port))
 }
 
-func (d *Daemon) SetRoutes() {
+func (d *Daemon) SetRoutes(logPath string) {
 	d.Engine.GET("/websocket", websocket.GetWS)
 	d.Engine.GET("/debug/vars", expvar.Handler())
 	d.Engine.GET("/groups", groups.ControllerGetGroups)
+	d.Engine.GET("/logs", func(c *gin.Context) { GetLogs(c, logPath) })
 
 	allGroupRouter := d.Engine.Group("/groups/")
 	{
