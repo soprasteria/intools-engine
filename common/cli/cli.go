@@ -69,6 +69,12 @@ func NewApp() *cli.App {
 			Value:  "",
 			EnvVar: "DOCKER_REGISTRY_TOKEN",
 		},
+		cli.StringFlag{
+			Name:   "log-path",
+			Usage:  "Path to the file where logs are redirected",
+			Value:  "/var/log/intools-engine/current",
+			EnvVar: "LOG_PATH",
+		},
 	}
 	app.Commands = []cli.Command{
 		cli.Command{
