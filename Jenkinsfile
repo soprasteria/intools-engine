@@ -38,10 +38,10 @@ node{
         withCredentials([[$class: 'StringBinding', credentialsId: '382b84d3-2bb3-4fca-8d13-7e874c6339a2', variable: 'ARTIFACTORY_URL'], [$class: 'UsernamePasswordBinding', credentialsId: 'cc2089e7-c24c-4048-8311-7376c1bab694', variable: 'ARTIFACTORY_CREDENTIALS']]) {
           stage 'Publish'
             sh '''
-              if [ -Z $CUSTOM_VERSION ]; then
+              if [ -Z "''' + CUSTOM_VERSION + '''" ]; then
                 version=$(cat version)
               else
-                version=$CUSTOM_VERSION
+                version=''' + CUSTOM_VERSION + '''
               fi
 
               tarname=intools-engine-$version.tgz
