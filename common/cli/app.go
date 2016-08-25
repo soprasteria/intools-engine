@@ -36,7 +36,7 @@ func daemonAction(c *cli.Context) {
 	port := c.GlobalInt("port")
 	debug := c.GlobalBool("debug")
 	logPath := c.GlobalString("log-path")
-	logs.Trace.Println("Starting Intools-Engine as daemon")
+	logs.Info.Println("Starting Intools-Engine as daemon")
 
 	dockerClient, dockerHost, err := utils.GetDockerCient(c)
 	if err != nil {

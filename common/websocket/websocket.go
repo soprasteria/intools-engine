@@ -47,7 +47,7 @@ func InitChannel(length int64) {
 		length = defaultChannelLength
 	}
 	ConnectorBuffer = make(chan *LightConnector, length)
-	logs.Trace.Printf("Initializing websocket buffered channel with a size of %+v", length)
+	logs.Info.Printf("Initializing websocket buffered channel with a size of %+v", length)
 	go func() {
 		for {
 			notify(<-ConnectorBuffer)
@@ -67,7 +67,7 @@ func GetWS(c *gin.Context) {
 	if err != nil {
 		switch err.(type) {
 		case *websocket.CloseError:
-			logs.Trace.Printf("Communication with client has been interrupted : websocket closed")
+			logs.Info.Printf("Communication with client has been interrupted : websocket closed")
 			return
 		default:
 			logs.Error.Printf("Error while registering client, closing websocket : %s", err)
@@ -87,7 +87,7 @@ func (appClient *AppClient) Register(conn *websocket.Conn) error {
 		return err
 	}
 
-	logs.Trace.Printf("Client %v registered", client)
+	logs.Info.Printf("Client %v registered", client)
 
 	err = appclient.handleEvents(conn, &client)
 	if err != nil {
@@ -98,7 +98,7 @@ func (appClient *AppClient) Register(conn *websocket.Conn) error {
 
 // Broadcasts the value to all client registered to the group
 func notify(lConnector *LightConnector) {
-	logs.Trace.Printf("Notifying all client registered to groupid %s", lConnector.GroupId)
+	logs.Info.Printf("Notifying all client registered to groupid %s", lConnector.GroupId)
 	logs.Debug.Printf("Value to send : %v , Clients to notify %v", lConnector.Value, appclient.Clients)
 
 	for _, client := range appclient.Clients {
@@ -197,13 +197,13 @@ Events:
 			// Handles group registering for the client
 
 			client.GroupIds = append(client.GroupIds, groupId)
-			logs.Trace.Printf("Registered group %s for client %p", groupId, client)
+			logs.Info.Printf("Registered group %s for client %p", groupId, client)
 		case "unregister-group":
 			// Handles group unregistering for the client
 			i, ok := utils.IndexOf(client.GroupIds, groupId)
 			if ok {
 				client.GroupIds = append(client.GroupIds[:i], client.GroupIds[i+1:]...)
-				logs.Trace.Printf("Unregistered group %s for client %p", groupId, client)
+				logs.Info.Printf("Unregistered group %s for client %p", groupId, client)
 			}
 		}
 		logs.Debug.Printf("Registered groups for client %p are now : %s", client, client.GroupIds)

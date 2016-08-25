@@ -59,7 +59,7 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 
 	//If it exists, remove it
 	if containerExists {
-		logs.Trace.Printf("Removing container %s [/%s]", previousContainerID[:11], connector.GetContainerName())
+		logs.Info.Printf("Removing container %s [/%s]", previousContainerID[:11], connector.GetContainerName())
 		removeContainerOptions := docker.RemoveContainerOptions{ID: previousContainerID, RemoveVolumes: true, Force: true}
 		err = intools.Engine.GetDockerClient().Docker.RemoveContainer(removeContainerOptions)
 		if err != nil {
@@ -81,6 +81,7 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 	executor.Host = intools.Engine.GetDockerHost()
 
 	// Starting container
+	logs.Info.Println("Starting container " + connector.GetContainerName())
 	err = container.Run()
 	if err != nil {
 		logs.Error.Println("Cannot start container " + connector.GetContainerName())
@@ -93,7 +94,7 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 	wg.Add(1)
 
 	executor.ContainerId = container.ID()[:11]
-	logs.Trace.Printf("%s [/%s] successfully started", executor.ContainerId, connector.GetContainerName())
+	logs.Info.Printf("%s [/%s] successfully started", executor.ContainerId, connector.GetContainerName())
 	logs.Debug.Println(executor.ContainerId + " will be stopped after " + fmt.Sprint(connector.Timeout) + " seconds")
 	//Trigger stop of the container after the timeout
 	intools.Engine.GetDockerClient().Docker.StopContainer(container.ID(), connector.Timeout)
@@ -103,13 +104,13 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 		//Each time inspect the container
 		inspect, err := intools.Engine.GetDockerClient().InspectContainer(container.ID())
 		if err != nil {
-			logs.Error.Println("Cannot inpect container " + executor.ContainerId)
+			logs.Error.Println("Cannot inspect container " + connector.GetContainerName())
 			logs.Error.Println(err)
 			return executor, err
 		}
 		if !inspect.IsRunning() {
 			//When the container is not running
-			logs.Debug.Println(executor.ContainerId + " is stopped")
+			logs.Debug.Println(connector.GetContainerName() + " is stopped")
 			executor.Running = false
 			executor.Terminated = true
 			executor.ExitCode = inspect.Container.State.ExitCode
@@ -121,7 +122,7 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 			break
 		} else {
 			//Wait
-			logs.Debug.Println(executor.ContainerId + " is running...")
+			logs.Debug.Println(connector.GetContainerName() + " is running...")
 			time.Sleep(5 * time.Second)
 		}
 	}

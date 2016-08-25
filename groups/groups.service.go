@@ -8,9 +8,9 @@ import (
 func Reload() {
 	groups := GetGroups(true)
 	for _, group := range groups {
-		logs.Trace.Printf("%s - Reloading group", group.Name)
+		logs.Info.Printf("%s - Reloading group", group.Name)
 		for _, connector := range group.Connectors {
-			logs.Trace.Printf("%s:%s - Reloading connector", group.Name, connector.Name)
+			logs.Info.Printf("%s:%s - Reloading connector", group.Name, connector.Name)
 			connectors.InitSchedule(&connector)
 		}
 	}

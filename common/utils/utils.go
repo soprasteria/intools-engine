@@ -71,7 +71,7 @@ func GetRedis(c *cli.Context) (*redis.Client, error) {
 
 	client, err := GetRedisClient()
 
-	logs.Trace.Printf("Connected to Redis Host %s/%d", c.GlobalString("redis"), c.GlobalInt("redis-db"))
+	logs.Info.Printf("Connected to Redis Host %s/%d", c.GlobalString("redis"), c.GlobalInt("redis-db"))
 	return client, err
 }
 
@@ -144,7 +144,7 @@ func GetDockerCient(c *cli.Context) (*dockerapi.Client, string, error) {
 		logs.Error.Println(err)
 		return nil, host, err
 	}
-	logs.Trace.Println("Connected to Docker Host " + host)
+	logs.Info.Println("Connected to Docker Host " + host)
 	logs.Debug.Println("Docker Version: " + env.Get("Version"))
 	logs.Debug.Println("Git Commit:" + env.Get("GitCommit"))
 	logs.Debug.Println("Go Version:" + env.Get("GoVersion"))
