@@ -17,7 +17,7 @@ import (
 
 func InitSchedule(c *Connector) cron.EntryID {
 	if intools.Engine.GetCron() != nil {
-		crontab := fmt.Sprintf("@every %ds", c.Refresh)
+		crontab := fmt.Sprintf("@every %dm", c.Refresh)
 		logs.Debug.Printf("Schedule %s:%s %s", c.Group, c.Name, crontab)
 		entryId, _ := intools.Engine.GetCron().AddJob(crontab, c)
 		return entryId

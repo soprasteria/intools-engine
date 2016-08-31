@@ -2,8 +2,9 @@ package executors
 
 import (
 	"encoding/json"
-	"github.com/soprasteria/intools-engine/common/logs"
 	"time"
+
+	"github.com/soprasteria/intools-engine/common/logs"
 )
 
 type Executor struct {
