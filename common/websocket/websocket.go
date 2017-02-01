@@ -1,10 +1,10 @@
 package websocket
 
 import (
-	"github.com/soprasteria/intools-engine/common/logs"
-	"github.com/soprasteria/intools-engine/common/utils"
+	log "github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/soprasteria/intools-engine/common/utils"
 )
 
 const (
@@ -47,7 +47,7 @@ func InitChannel(length int64) {
 		length = defaultChannelLength
 	}
 	ConnectorBuffer = make(chan *LightConnector, length)
-	logs.Info.Printf("Initializing websocket buffered channel with a size of %+v", length)
+	log.Info("Initializing websocket buffered channel with a size of ", length)
 	go func() {
 		for {
 			notify(<-ConnectorBuffer)
@@ -59,7 +59,7 @@ func InitChannel(length int64) {
 func GetWS(c *gin.Context) {
 	conn, err := wsupgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		logs.Error.Printf("Failed to set websocket upgrade: %+v", err)
+		log.WithError(err).Error("Failed to set websocket upgrade")
 		return
 	}
 	// Registering the connection from Intools back-office
@@ -67,10 +67,10 @@ func GetWS(c *gin.Context) {
 	if err != nil {
 		switch err.(type) {
 		case *websocket.CloseError:
-			logs.Info.Printf("Communication with client has been interrupted : websocket closed")
+			log.Info("Communication with client has been interrupted : websocket closed")
 			return
 		default:
-			logs.Error.Printf("Error while registering client, closing websocket : %s", err)
+			log.WithError(err).Error("Error while registering client, closing websocket")
 			conn.Close()
 		}
 	}
@@ -83,11 +83,11 @@ func (appClient *AppClient) Register(conn *websocket.Conn) error {
 	appclient.bindClient(conn, &client)
 	err := sendAck(conn)
 	if err != nil {
-		logs.Error.Printf("Can't send ack to the client : %s", err)
+		log.WithError(err).Error("Can't send ack to the client")
 		return err
 	}
 
-	logs.Info.Printf("Client %v registered", client)
+	log.Infof("Client %v registered", client)
 
 	err = appclient.handleEvents(conn, &client)
 	if err != nil {
@@ -98,17 +98,17 @@ func (appClient *AppClient) Register(conn *websocket.Conn) error {
 
 // Broadcasts the value to all client registered to the group
 func notify(lConnector *LightConnector) {
-	logs.Info.Printf("Notifying all client registered to groupid %s", lConnector.GroupId)
-	logs.Debug.Printf("Value to send : %v , Clients to notify %v", lConnector.Value, appclient.Clients)
+	log.WithField("groupID", lConnector.GroupId).Info("Notifying all client registered")
+	log.WithFields(log.Fields{"value": lConnector.Value, "clients": appclient.Clients}).Debug("Send value to clients")
 
 	for _, client := range appclient.Clients {
-		logs.Debug.Printf("Clients groupids %s", client.GroupIds)
+		log.WithField("groupIDs", client.GroupIds).Debug("Clients")
 		if utils.Contains(client.GroupIds, lConnector.GroupId) {
 			message := createConnectorValueMessage(lConnector.ConnectorId, lConnector.Value)
-			logs.Debug.Printf("Notifying client %p with message %s", client, message)
+			log.WithFields(log.Fields{"client": client, "message": message}).Debug("Notifying client with message")
 			err := client.Socket.WriteJSON(message)
 			if err != nil {
-				logs.Warning.Printf("Can't send connector value of id %s, to client %p: %s", lConnector.ConnectorId, client, err)
+				log.WithError(err).Warnf("Can't send connector value of id %s, to client %p", lConnector.ConnectorId, client)
 			}
 		}
 	}
@@ -129,7 +129,7 @@ func createConnectorValueMessage(connectorId string, value *map[string]interface
 
 // Create a simple client
 func createClient(conn *websocket.Conn) Client {
-	logs.Debug.Printf("Connection event from client")
+	log.Debug("Connection event from client")
 	var client = &Client{
 		Socket:   conn,
 		GroupIds: []string{},
@@ -139,9 +139,9 @@ func createClient(conn *websocket.Conn) Client {
 
 // Add the client to the connected clients
 func (appClient *AppClient) bindClient(conn *websocket.Conn, c *Client) {
-	logs.Debug.Printf("clients before %v", appClient.Clients)
+	log.Debugf("clients before %v", appClient.Clients)
 	appClient.Clients[conn] = c
-	logs.Debug.Printf("clients %v", appClient.Clients)
+	log.Debugf("clients %v", appClient.Clients)
 }
 
 // Send ack to the client
@@ -167,27 +167,27 @@ Events:
 		if err != nil {
 			switch err.(type) {
 			case *websocket.CloseError:
-				logs.Debug.Printf("Websocket %p is deconnected. Removing from clients", conn)
+				log.Debugf("Websocket %p is deconnected. Removing from clients", conn)
 				delete(appclient.Clients, conn)
-				logs.Debug.Printf("Clients are now  %v", appClient.Clients)
+				log.Debugf("Clients are now  %v", appClient.Clients)
 				return err
 			default:
-				logs.Warning.Printf("Error while reading json message : %s", err)
+				log.WithError(err).Warn("Error while reading json message")
 				continue Events
 			}
 		}
 
-		logs.Debug.Printf("Message %v", message)
+		log.Debugf("Message %v", message)
 
 		// Check message structure
 		id, ok := message.Data["groupId"]
 		if !ok {
-			logs.Warning.Printf("Can't register or unregister group because groupId does not exist in message")
+			log.Warn("Can't register or unregister group because groupId does not exist in message")
 			continue Events
 		}
 		groupId, ok := id.(string)
 		if !ok {
-			logs.Warning.Printf("Can't register or unregister group because groupId is not string : %s", groupId)
+			log.Warnf("Can't register or unregister group because groupId is not string : %s", groupId)
 			continue Events
 		}
 
@@ -197,15 +197,15 @@ Events:
 			// Handles group registering for the client
 
 			client.GroupIds = append(client.GroupIds, groupId)
-			logs.Info.Printf("Registered group %s for client %p", groupId, client)
+			log.Infof("Registered group %s for client %p", groupId, client)
 		case "unregister-group":
 			// Handles group unregistering for the client
 			i, ok := utils.IndexOf(client.GroupIds, groupId)
 			if ok {
 				client.GroupIds = append(client.GroupIds[:i], client.GroupIds[i+1:]...)
-				logs.Info.Printf("Unregistered group %s for client %p", groupId, client)
+				log.Infof("Unregistered group %s for client %p", groupId, client)
 			}
 		}
-		logs.Debug.Printf("Registered groups for client %p are now : %s", client, client.GroupIds)
+		log.Debugf("Registered groups for client %p are now : %s", client, client.GroupIds)
 	}
 }

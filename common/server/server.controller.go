@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/soprasteria/intools-engine/common/logs"
+	log "github.com/Sirupsen/logrus"
 	"github.com/soprasteria/intools-engine/common/utils"
 
 	"github.com/gin-gonic/gin"
@@ -38,7 +38,7 @@ func GetLogs(c *gin.Context, path string) {
 }
 
 func getFileContent(path string) (string, error) {
-	logs.Debug.Printf("Read %s", path)
+	log.Debug("Read ", path)
 	bytes, err := getBinaryFileContent(path)
 	if err != nil {
 		return "", err

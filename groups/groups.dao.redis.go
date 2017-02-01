@@ -3,10 +3,9 @@ package groups
 import (
 	"fmt"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/soprasteria/intools-engine/intools"
 )
-
-import "github.com/soprasteria/intools-engine/common/logs"
 
 func GetRedisGroupsKey() string {
 	return "intools:groups"
@@ -65,7 +64,7 @@ func RedisDeleteGroup(group string) error {
 	//TODO This remove too much data
 	cmd := r.Eval("return redis.call('del', unpack(redis.call('keys', ARGV[1])))", evalKeys, evalArgs)
 
-	logs.Debug.Printf("%s --> %d", keyGroup, cmd.Val())
+	log.Debugf("%s --> %d", keyGroup, cmd.Val())
 	if cmd.Err() != nil {
 		return cmd.Err()
 	}

@@ -1,16 +1,12 @@
 package cli
 
 import (
-	"fmt"
-	"io"
-	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
-	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
-	"github.com/soprasteria/intools-engine/common/logs"
+
 	"github.com/soprasteria/intools-engine/common/server"
 	"github.com/soprasteria/intools-engine/common/utils"
 	"github.com/soprasteria/intools-engine/connectors"
@@ -18,25 +14,24 @@ import (
 	"github.com/soprasteria/intools-engine/intools"
 )
 
-func initLoggers(c *cli.Context) {
-	var debugLogger io.Writer
-	var flag int
-	if c.GlobalBool("debug") {
-		debugLogger = os.Stdout
-		flag = log.Ldate | log.Ltime | log.Lshortfile
-	} else {
-		debugLogger = ioutil.Discard
-		flag = log.Ldate | log.Ltime
+func initLoggers(lvl string) {
+	log.SetOutput(os.Stdout)
+	level, err := log.ParseLevel(lvl)
+	if err != nil {
+		level = log.WarnLevel
+		log.WithError(err).WithField("defaultLevel", level).Warn("Invalid log level, using default")
 	}
-	logs.InitLog(debugLogger, os.Stdout, os.Stdout, os.Stderr, flag)
+	log.SetLevel(level)
+
+	log.SetFormatter(&log.TextFormatter{})
 }
 
 func daemonAction(c *cli.Context) {
-	initLoggers(c)
 	port := c.GlobalInt("port")
-	debug := c.GlobalBool("debug")
+	level := c.GlobalString("log-level")
+	initLoggers(level)
 	logPath := c.GlobalString("log-path")
-	logs.Info.Println("Starting Intools-Engine as daemon")
+	log.Info("Starting Intools-Engine as daemon")
 
 	dockerClient, dockerHost, err := utils.GetDockerCient(c)
 	if err != nil {
@@ -48,13 +43,14 @@ func daemonAction(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	d := server.NewDaemon(port, debug, dockerClient, dockerHost, redisClient)
+	d := server.NewDaemon(port, level, dockerClient, dockerHost, redisClient)
 	d.SetRoutes(logPath)
 	d.Run()
 }
 
 func runAction(c *cli.Context) {
-	initLoggers(c)
+	level := c.GlobalString("log-level")
+	initLoggers(level)
 
 	dockerClient, host, err := utils.GetDockerCient(c)
 	if err != nil {
@@ -69,7 +65,7 @@ func runAction(c *cli.Context) {
 	cmd := []string{c.Args().First()}
 	cmd = append(cmd, c.Args().Tail()...)
 	if len(cmd) < 4 {
-		logs.Error.Println("Incorrect usage, please check --help")
+		log.Error("Incorrect usage, please check --help")
 		return
 	}
 	group := cmd[0]
@@ -79,13 +75,13 @@ func runAction(c *cli.Context) {
 	timeout, err := strconv.ParseUint(t, 10, 64)
 	if err != nil {
 		// handle error
-		logs.Error.Println(err)
+		log.WithError(err).Error("Error while parsing timeout")
 		os.Exit(2)
 	}
 	cmd = cmd[4:]
 
-	logs.Debug.Println("Launching " + image + " " + strings.Join(cmd, " "))
-	logs.Warning.Printf("In command line, connector schedule is not available")
+	log.WithFields(log.Fields{"image": image, "commands": cmd}).Debug("Launching...")
+	log.Warn("In command line, connector schedule is not available")
 	intools.Engine = &intools.IntoolsEngineImpl{DockerClient: dockerClient, DockerHost: host, RedisClient: redisClient, Cron: nil}
 	connector := connectors.NewConnector(group, conn)
 	connector.Init(image, uint(timeout), 0, cmd)
@@ -97,14 +93,14 @@ func runAction(c *cli.Context) {
 	if err != nil {
 		os.Exit(3)
 	}
-	fmt.Println(executor.GetJSON())
+	log.Info(executor.GetJSON())
 
 }
 
 func testAction(c *cli.Context) {
-	logs.Error.Println("Not yet implemented")
+	log.Error("Not yet implemented")
 }
 
 func publishAction(c *cli.Context) {
-	logs.Error.Println("Not yet implemented")
+	log.Error("Not yet implemented")
 }

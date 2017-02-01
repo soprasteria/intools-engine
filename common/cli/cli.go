@@ -41,9 +41,10 @@ func NewApp() *cli.App {
 			EnvVar: "REDIS_DB",
 		},
 		cli.StringFlag{
-			Name:   "debug",
-			Usage:  "Debug mode",
-			EnvVar: "INTOOLS_DEBUG",
+			Name:   "log-level",
+			Usage:  "Log level",
+			EnvVar: "INTOOLS_LOG_LEVEL",
+			Value:  "info",
 		},
 		cli.StringFlag{
 			Name:   "registry-username",

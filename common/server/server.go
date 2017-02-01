@@ -3,9 +3,9 @@ package server
 import (
 	"fmt"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 	"github.com/soprasteria/dockerapi"
-	"github.com/soprasteria/intools-engine/common/logs"
 	"github.com/soprasteria/intools-engine/common/websocket"
 	"github.com/soprasteria/intools-engine/connectors"
 	"github.com/soprasteria/intools-engine/groups"
@@ -17,28 +17,30 @@ import (
 )
 
 type Daemon struct {
-	Port      int
-	Engine    *gin.Engine
-	DebugMode bool
+	Port   int
+	Engine *gin.Engine
+	level  string
 }
 
-func NewDaemon(port int, debug bool, dockerClient *dockerapi.Client, dockerHost string, redisClient *redis.Client) *Daemon {
+func NewDaemon(port int, level string, dockerClient *dockerapi.Client, dockerHost string, redisClient *redis.Client) *Daemon {
 
-	engine := gin.Default()
-	if debug {
-		logs.Debug.Println("Initializing daemon in debug mode")
+	var engine *gin.Engine
+	if level == string(gin.DebugMode) {
+		log.Debug("Initializing daemon in debug mode")
 		gin.SetMode(gin.DebugMode)
+		engine = gin.Default()
 		engine.LoadHTMLFiles("index.html")
 		engine.GET("/", func(c *gin.Context) {
 			c.HTML(200, "index.html", nil)
 		})
 	} else {
 		gin.SetMode(gin.ReleaseMode)
+		engine = gin.Default()
 	}
 
 	cron := cron.New()
 	intools.Engine = &intools.IntoolsEngineImpl{dockerClient, dockerHost, redisClient, cron}
-	daemon := &Daemon{port, engine, debug}
+	daemon := &Daemon{port, engine, level}
 
 	length := groups.GetGroupsLength()
 	websocket.InitChannel(length)
