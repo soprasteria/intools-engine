@@ -67,11 +67,12 @@ func GetRedis(c *cli.Context) (*redis.Client, error) {
 		Addr:     c.GlobalString("redis"),
 		Password: c.GlobalString("redis-password"),
 		DB:       int64(c.GlobalInt("redis-db")),
+		PoolSize: 30,
 	}
 
 	client, err := GetRedisClient()
 
-	log.WithFields(log.Fields{"http": c.GlobalString("redis"), "db": c.GlobalString("redis")}).Info("Connected to Redis Host")
+	log.WithFields(log.Fields{"http": c.GlobalString("redis"), "db": c.GlobalString("redis-db")}).Info("Connected to Redis Host")
 	return client, err
 }
 

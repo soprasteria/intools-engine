@@ -37,11 +37,10 @@ func NewDaemon(port int, level string, dockerClient *dockerapi.Client, dockerHos
 		gin.SetMode(gin.ReleaseMode)
 		engine = gin.Default()
 	}
-
+	engine.Use(gin.Recovery())
 	cron := cron.New()
 	intools.Engine = &intools.IntoolsEngineImpl{dockerClient, dockerHost, redisClient, cron}
 	daemon := &Daemon{port, engine, level}
-
 	length := groups.GetGroupsLength()
 	websocket.InitChannel(length)
 	return daemon

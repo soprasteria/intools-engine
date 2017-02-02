@@ -5,14 +5,15 @@ node{
       [$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'CUSTOM_VERSION', defaultValue: '',
       description: 'Set a custom version if you want to manually set the version tag to a specific value (e.g. bump to a major version). Leave empty if you want to automatically bump the patch version.']]]]
       )
-
-    def goTool = tool 'GO-1.5.3'
-    // clean build
-    sh 'rm -rf src'
     env.INTOOLS_BUILD = "src/github.com/soprasteria/intools-engine"
-    env.PATH = "$goTool/bin:${env.PATH}"
-    env.GOROOT = "$goTool"
+    env.GOROOT = tool '1.7.1'
     env.GOPATH = pwd()
+    env.PATH = "${env.GOROOT}/bin:${env.GOPATH}/bin:${env.PATH}"
+    // clean build
+    sh '''
+      rm -rf src
+      go get -u github.com/kardianos/govendor
+    '''
   stage 'Checkout'
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '9ec20a0a-6264-4217-8ac0-11df115c70cc', passwordVariable: 'GITHUB_ACCESS_TOKEN', usernameVariable: 'GITHUB_LOGIN']]) {
       sh 'git config --global credential.helper cache'
@@ -22,18 +23,20 @@ node{
                 extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'src/github.com/soprasteria/intools-engine'], [$class: 'LocalBranch', localBranch: '${BRANCH_NAME}']],
                 userRemoteConfigs: [[url: 'git@github.com:soprasteria/intools-engine.git']]])
     }
-  dir(env.INTOOLS_BUILD){
-    stage 'Compile'
-      sh '''
-        go get -v
-        CGO_ENABLED=0 go build -a -installsuffix cgo
-      '''
-    stage 'Test'
-      sh '''
-        go get -t ./...
-        go test ./...
-      '''
 
+      stage 'Compile'
+        sh '''
+          cd ${GOPATH}/${INTOOLS_BUILD}
+          govendor sync -v
+          CGO_ENABLED=0 go build -a -installsuffix cgo
+        '''
+      stage 'Test'
+        sh '''
+          cd ${GOPATH}/${INTOOLS_BUILD}
+          govendor test +local
+        '''
+
+    dir(env.INTOOLS_BUILD) {
       if (env.BRANCH_NAME == "master") {
         withCredentials([[$class: 'StringBinding', credentialsId: '382b84d3-2bb3-4fca-8d13-7e874c6339a2', variable: 'ARTIFACTORY_URL'], [$class: 'UsernamePasswordBinding', credentialsId: 'cc2089e7-c24c-4048-8311-7376c1bab694', variable: 'ARTIFACTORY_CREDENTIALS']]) {
           stage 'Publish'
@@ -71,7 +74,7 @@ node{
               git push origin develop
               git checkout master
               git reset --hard origin/master
-              '''
+            '''
         }
       }
   }
