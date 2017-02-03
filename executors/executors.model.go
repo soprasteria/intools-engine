@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/soprasteria/intools-engine/common/logs"
+	log "github.com/Sirupsen/logrus"
 )
 
 type Executor struct {
@@ -24,7 +24,7 @@ type Executor struct {
 func (e *Executor) GetJSON() string {
 	b, err := json.Marshal(e)
 	if err != nil {
-		logs.Error.Println(err)
+		log.Error(err)
 		return ""
 	}
 	return string(b[:])
@@ -33,7 +33,7 @@ func (e *Executor) GetJSON() string {
 func (e *Executor) GetResult() string {
 	b, err := json.Marshal(e.JsonStdout)
 	if err != nil {
-		logs.Error.Println(err)
+		log.Error(err)
 		return ""
 	}
 	return string(b[:])

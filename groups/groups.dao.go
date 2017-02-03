@@ -1,7 +1,7 @@
 package groups
 
 import (
-	"github.com/soprasteria/intools-engine/common/logs"
+	log "github.com/Sirupsen/logrus"
 	"github.com/soprasteria/intools-engine/connectors"
 )
 
@@ -18,7 +18,7 @@ func GetGroup(name string, withConnectors bool) *Group {
 func GetGroupsLength() int64 {
 	length, err := RedisGetLength()
 	if err != nil {
-		logs.Error.Printf("Error while getting groups length from Redis %s", err.Error())
+		log.Errorf("Error while getting groups length from Redis %s", err.Error())
 		return 0
 	}
 	return length
@@ -27,7 +27,7 @@ func GetGroupsLength() int64 {
 func GetGroups(withConnectors bool) []Group {
 	groups, err := RedisGetGroups()
 	if err != nil {
-		logs.Error.Printf("Error while getting groups from Redis %s", err.Error())
+		log.Errorf("Error while getting groups from Redis %s", err.Error())
 		return nil
 	}
 	allGroups := make([]Group, len(groups))

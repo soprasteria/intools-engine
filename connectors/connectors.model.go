@@ -3,8 +3,8 @@ package connectors
 import (
 	"encoding/json"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/soprasteria/dockerapi"
-	"github.com/soprasteria/intools-engine/common/logs"
 	"github.com/soprasteria/intools-engine/executors"
 )
 
@@ -49,7 +49,7 @@ func (c *Connector) GetContainerName() string {
 func (c *Connector) GetJSON() string {
 	b, err := json.Marshal(c)
 	if err != nil {
-		logs.Error.Println(err)
+		log.Error(err)
 		return ""
 	}
 	return string(b[:])
@@ -57,6 +57,6 @@ func (c *Connector) GetJSON() string {
 
 func (c *Connector) Run() {
 	//TODO : Should not run error, or invalid connector ?
-	logs.Debug.Printf("Run Connector %s:%s", c.Group, c.Name)
+	log.Debug("Run Connector %s:%s", c.Group, c.Name)
 	Exec(c)
 }

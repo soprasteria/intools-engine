@@ -1,7 +1,7 @@
 package connectors
 
 import (
-	"github.com/soprasteria/intools-engine/common/logs"
+	log "github.com/Sirupsen/logrus"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,7 +15,7 @@ func ControllerGetConnector(c *gin.Context) {
 	group := c.Param("group")
 	connector := c.Param("connector")
 
-	logs.Debug.Printf("Searching for %s:%s", group, connector)
+	log.Debugf("Searching for %s:%s", group, connector)
 
 	conn, err := GetConnector(group, connector)
 	if err != nil {
@@ -29,7 +29,7 @@ func ControllerExecConnector(c *gin.Context) {
 	group := c.Param("group")
 	connector := c.Param("connector")
 
-	logs.Debug.Printf("Searching for %s:%s", group, connector)
+	log.Debugf("Searching for %s:%s", group, connector)
 
 	conn, err := GetConnector(group, connector)
 	if err != nil {

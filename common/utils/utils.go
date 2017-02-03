@@ -13,10 +13,10 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/gin-gonic/gin"
 	"github.com/soprasteria/dockerapi"
-	"github.com/soprasteria/intools-engine/common/logs"
 	"gopkg.in/redis.v3"
 )
 
@@ -56,9 +56,9 @@ func ReadLogs(reader io.Reader) (string, error) {
 	}
 	err := scanner.Err()
 	if err != nil {
-		logs.Error.Println("There was an error with the scanner", err)
+		log.WithError(err).Error("There was an error with the scanner")
 	}
-	logs.Debug.Println(text)
+	log.Debug(text)
 	return text, err
 }
 
@@ -67,11 +67,12 @@ func GetRedis(c *cli.Context) (*redis.Client, error) {
 		Addr:     c.GlobalString("redis"),
 		Password: c.GlobalString("redis-password"),
 		DB:       int64(c.GlobalInt("redis-db")),
+		PoolSize: 30,
 	}
 
 	client, err := GetRedisClient()
 
-	logs.Info.Printf("Connected to Redis Host %s/%d", c.GlobalString("redis"), c.GlobalInt("redis-db"))
+	log.WithFields(log.Fields{"http": c.GlobalString("redis"), "db": c.GlobalString("redis-db")}).Info("Connected to Redis Host")
 	return client, err
 }
 
@@ -80,7 +81,7 @@ func GetRedisClient() (*redis.Client, error) {
 
 	_, err := client.Ping().Result()
 	if err != nil {
-		logs.Error.Println("Unable to connect to redis host")
+		log.Error("Unable to connect to redis host")
 		return nil, err
 	}
 
@@ -90,7 +91,7 @@ func GetRedisClient() (*redis.Client, error) {
 func GetDockerCient(c *cli.Context) (*dockerapi.Client, string, error) {
 	host := c.GlobalString("host")
 	if host == "" {
-		logs.Error.Println("Incorrect usage, please set the docker host")
+		log.Error("Incorrect usage, please set the docker host")
 		return nil, "", errors.New("Unable to connect to docker host")
 	}
 
@@ -100,22 +101,22 @@ func GetDockerCient(c *cli.Context) (*dockerapi.Client, string, error) {
 	if certPath != "" {
 		caFile := filepath.Join(certPath, "ca.pem")
 		if _, err := os.Stat(caFile); os.IsNotExist(err) {
-			logs.Error.Println("Cannot open file : " + caFile)
-			logs.Error.Println("Incorrect usage, please set correct cert files")
+			log.WithField("file", caFile).Error("Cannot open file")
+			log.Error("Incorrect usage, please set correct cert files")
 			return nil, host, errors.New("Unable to connect to docker host")
 		}
 
 		certFile := filepath.Join(certPath, "cert.pem")
 		if _, err := os.Stat(certFile); os.IsNotExist(err) {
-			logs.Error.Println("Cannot open file : " + certFile)
-			logs.Error.Println("Incorrect usage, please set correct cert files")
+			log.WithField("file", certFile).Error("Cannot open file")
+			log.Error("Incorrect usage, please set correct cert files")
 			return nil, host, errors.New("Unable to connect to docker host")
 		}
 
 		keyFile := filepath.Join(certPath, "key.pem")
 		if _, err := os.Stat(keyFile); os.IsNotExist(err) {
-			logs.Error.Println("Cannot open file : " + keyFile)
-			logs.Error.Println("Incorrect usage, please set correct cert files")
+			log.WithField("file", keyFile).Error("Cannot open file")
+			log.Error("Incorrect usage, please set correct cert files")
 			return nil, host, errors.New("Unable to connect to docker host")
 		}
 
@@ -135,19 +136,18 @@ func GetDockerCient(c *cli.Context) (*dockerapi.Client, string, error) {
 		dockerClient, err = dockerapi.NewClient(host)
 	}
 	if err != nil {
-		logs.Error.Println("Unable to connect to docker host")
+		log.Error("Unable to connect to docker host")
 		return nil, host, err
 	}
 	env, err := dockerClient.Docker.Version()
 	if err != nil {
-		logs.Error.Println("Unable to ping docker host")
-		logs.Error.Println(err)
+		log.WithError(err).Error("Unable to ping docker host")
 		return nil, host, err
 	}
-	logs.Info.Println("Connected to Docker Host " + host)
-	logs.Debug.Println("Docker Version: " + env.Get("Version"))
-	logs.Debug.Println("Git Commit:" + env.Get("GitCommit"))
-	logs.Debug.Println("Go Version:" + env.Get("GoVersion"))
+	log.Info("Connected to Docker Host " + host)
+	log.Debug("Docker Version: " + env.Get("Version"))
+	log.Debug("Git Commit:" + env.Get("GitCommit"))
+	log.Debug("Go Version:" + env.Get("GoVersion"))
 
 	return dockerClient, host, err
 }
@@ -172,12 +172,12 @@ func IndexOf(slice []string, item string) (ind int, ok bool) {
 }
 
 func HandleError(message string, err error, c *gin.Context) map[string]string {
-	logs.Warning.Println("*******************************************************************************")
-	logs.Warning.Println("RemoteAddr :\t" + c.Request.RemoteAddr)
-	logs.Warning.Println("RequestURI :\t" + c.Request.RequestURI)
-	logs.Warning.Println("Message :\t" + message)
-	logs.Warning.Println("Error :\t" + err.Error())
-	logs.Warning.Println("*******************************************************************************")
+	log.Warn("*******************************************************************************")
+	log.Warn("RemoteAddr :\t" + c.Request.RemoteAddr)
+	log.Warn("RequestURI :\t" + c.Request.RequestURI)
+	log.Warn("Message :\t" + message)
+	log.Warn("Error :\t" + err.Error())
+	log.Warn("*******************************************************************************")
 
 	return map[string]string{
 		"message": message,
