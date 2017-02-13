@@ -7,11 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/soprasteria/dockerapi"
 	"github.com/soprasteria/intools-engine/common/websocket"
-	"github.com/soprasteria/intools-engine/connectors"
+	"github.com/soprasteria/intools-engine/controllers"
 	"github.com/soprasteria/intools-engine/groups"
 	"github.com/soprasteria/intools-engine/intools"
 	"gopkg.in/redis.v3"
-	"gopkg.in/robfig/cron.v2"
 
 	"github.com/gin-gonic/contrib/expvar"
 )
@@ -38,8 +37,7 @@ func NewDaemon(port int, level string, dockerClient *dockerapi.Client, dockerHos
 		engine = gin.Default()
 	}
 	engine.Use(gin.Recovery())
-	cron := cron.New()
-	intools.Engine = &intools.IntoolsEngineImpl{dockerClient, dockerHost, redisClient, cron}
+	intools.Engine = &intools.IntoolsEngineImpl{dockerClient, dockerHost, redisClient}
 	daemon := &Daemon{port, engine, level}
 	length := groups.GetGroupsLength()
 	websocket.InitChannel(length)
@@ -47,38 +45,34 @@ func NewDaemon(port int, level string, dockerClient *dockerapi.Client, dockerHos
 }
 
 func (d *Daemon) Run() {
-	go func() {
-		groups.Reload()
-		intools.Engine.GetCron().Start()
-	}()
 	d.Engine.Run(fmt.Sprintf("0.0.0.0:%d", d.Port))
 }
 
 func (d *Daemon) SetRoutes(logPath string) {
 	d.Engine.GET("/websocket", websocket.GetWS)
 	d.Engine.GET("/debug/vars", expvar.Handler())
-	d.Engine.GET("/groups", groups.ControllerGetGroups)
-	d.Engine.GET("/logs", func(c *gin.Context) { GetLogs(c, logPath) })
+	d.Engine.GET("/groups", controllers.ControllerGetGroups)
+	d.Engine.GET("/logs", func(c *gin.Context) { controllers.GetLogs(c, logPath) })
 
 	allGroupRouter := d.Engine.Group("/groups/")
 	{
-		allGroupRouter.GET("", groups.ControllerGetGroups)
+		allGroupRouter.GET("", controllers.ControllerGetGroups)
 
 		oneGroupRouter := allGroupRouter.Group("/:group")
 		{
-			oneGroupRouter.GET("", groups.ControllerGetGroup)
-			oneGroupRouter.POST("", groups.ControllerPostGroup)
-			oneGroupRouter.DELETE("", groups.ControllerDeleteGroup)
+			oneGroupRouter.GET("", controllers.ControllerGetGroup)
+			oneGroupRouter.POST("", controllers.ControllerPostGroup)
+			oneGroupRouter.DELETE("", controllers.ControllerDeleteGroup)
 
 			oneGroupConnectorRouter := oneGroupRouter.Group("/connectors")
 			{
-				oneGroupConnectorRouter.GET("", connectors.ControllerGetConnectors)
-				oneGroupConnectorRouter.GET("/:connector", connectors.ControllerGetConnector)
-				oneGroupConnectorRouter.POST("/:connector", connectors.ControllerCreateConnector)
-				oneGroupConnectorRouter.DELETE("/:connector", connectors.ControllerDeleteConnector)
-				oneGroupConnectorRouter.GET("/:connector/refresh", connectors.ControllerExecConnector)
-				oneGroupConnectorRouter.GET("/:connector/result", connectors.ControllerGetConnectorResult)
-				oneGroupConnectorRouter.GET("/:connector/exec", connectors.ControllerGetConnectorExecutor)
+				oneGroupConnectorRouter.GET("", controllers.ControllerGetConnectors)
+				oneGroupConnectorRouter.GET("/:connector", controllers.ControllerGetConnector)
+				oneGroupConnectorRouter.POST("/:connector", controllers.ControllerCreateConnector)
+				oneGroupConnectorRouter.DELETE("/:connector", controllers.ControllerDeleteConnector)
+				oneGroupConnectorRouter.GET("/:connector/refresh", controllers.ControllerExecConnector)
+				oneGroupConnectorRouter.GET("/:connector/result", controllers.ControllerGetConnectorResult)
+				oneGroupConnectorRouter.GET("/:connector/exec", controllers.ControllerGetConnectorExecutor)
 			}
 		}
 	}

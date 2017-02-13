@@ -164,7 +164,7 @@ func (r *RedisClientMock) ConfigSet(parameter, value string) *StatusCmd         
 func (r *RedisClientMock) DbSize() *IntCmd                                               { return nil }
 func (r *RedisClientMock) FlushAll() *StatusCmd                                          { return nil }
 func (r *RedisClientMock) FlushDb() *StatusCmd                                           { return nil }
-func (r *RedisClientMock) Info(keys ...string) *StringCmd                                { return nil }
+func (r *RedisClientMock) Info() *StringCmd                                              { return nil }
 func (r *RedisClientMock) LastSave() *IntCmd                                             { return nil }
 func (r *RedisClientMock) Save() *StatusCmd                                              { return nil }
 func (r *RedisClientMock) Shutdown() *StatusCmd                                          { return nil }

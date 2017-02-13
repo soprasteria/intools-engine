@@ -1,8 +1,9 @@
-package server
+package controllers
 
 import (
 	"errors"
 	"io/ioutil"
+	"net/http"
 	"os"
 
 	log "github.com/Sirupsen/logrus"
@@ -18,13 +19,13 @@ func GetLogs(c *gin.Context, path string) {
 	if err == nil {
 		if content == "" {
 			err = errors.New("Logs not found in " + path)
-			c.JSON(404, utils.HandleError("Logs not found", err, c))
+			c.JSON(http.StatusNotFound, utils.HandleError("Logs not found", err, c))
 		} else {
 			switch format {
 			case "text", "raw":
-				c.String(200, content)
+				c.String(http.StatusOK, content)
 			default:
-				c.JSON(200,
+				c.JSON(http.StatusOK,
 					map[string]string{
 						"message": "manager",
 						"details": content,
@@ -33,7 +34,7 @@ func GetLogs(c *gin.Context, path string) {
 			}
 		}
 	} else {
-		c.JSON(500, utils.HandleError("Unable to get logs", err, c))
+		c.JSON(http.StatusInternalServerError, utils.HandleError("Unable to get logs", err, c))
 	}
 }
 

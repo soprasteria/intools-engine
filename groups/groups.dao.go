@@ -25,11 +25,13 @@ func GetGroupsLength() int64 {
 }
 
 func GetGroups(withConnectors bool) []Group {
+	log.Debug("Fetching all groups from Redis...")
 	groups, err := RedisGetGroups()
 	if err != nil {
 		log.Errorf("Error while getting groups from Redis %s", err.Error())
 		return nil
 	}
+	log.WithField("nbGroupFromRedis", len(groups)).Debug("Fetched all groups from Redis")
 	allGroups := make([]Group, len(groups))
 	for i, g := range groups {
 		group := &Group{
