@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	defaultChannelLength = 10
+	defaultChannelLength = 100
 )
 
 var (
@@ -87,7 +87,7 @@ func (appClient *AppClient) Register(conn *websocket.Conn) error {
 		return err
 	}
 
-	log.Infof("Client %v registered", client)
+	log.WithField("client", client).Info("Client is now registered to engine")
 
 	err = appclient.handleEvents(conn, &client)
 	if err != nil {
@@ -197,13 +197,13 @@ Events:
 			// Handles group registering for the client
 
 			client.GroupIds = append(client.GroupIds, groupId)
-			log.Infof("Registered group %s for client %p", groupId, client)
+			log.WithField("group", groupId).WithField("client", client).Info("Group registered to engine")
 		case "unregister-group":
 			// Handles group unregistering for the client
 			i, ok := utils.IndexOf(client.GroupIds, groupId)
 			if ok {
 				client.GroupIds = append(client.GroupIds[:i], client.GroupIds[i+1:]...)
-				log.Infof("Unregistered group %s for client %p", groupId, client)
+				log.WithField("group", groupId).WithField("client", client).Info("Group is unregistered from engine")
 			}
 		}
 		log.Debugf("Registered groups for client %p are now : %s", client, client.GroupIds)

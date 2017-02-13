@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -64,10 +65,14 @@ func ReadLogs(reader io.Reader) (string, error) {
 
 func GetRedis(c *cli.Context) (*redis.Client, error) {
 	redisOptions = &redis.Options{
-		Addr:     c.GlobalString("redis"),
-		Password: c.GlobalString("redis-password"),
-		DB:       int64(c.GlobalInt("redis-db")),
-		PoolSize: 30,
+		Addr:         c.GlobalString("redis"),
+		Password:     c.GlobalString("redis-password"),
+		DB:           int64(c.GlobalInt("redis-db")),
+		PoolSize:     1000,
+		PoolTimeout:  2 * time.Minute,
+		IdleTimeout:  10 * time.Minute,
+		ReadTimeout:  2 * time.Minute,
+		WriteTimeout: 1 * time.Minute,
 	}
 
 	client, err := GetRedisClient()

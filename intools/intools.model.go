@@ -6,23 +6,12 @@ import (
 	"github.com/soprasteria/dockerapi"
 	"github.com/soprasteria/intools-engine/common/utils"
 	. "gopkg.in/redis.v3"
-	"gopkg.in/robfig/cron.v2"
 )
 
 type IntoolsEngine interface {
 	GetDockerClient() *dockerapi.Client
 	GetDockerHost() string
 	GetRedisClient() RedisWrapper
-	GetCron() CronWrapper
-}
-
-type CronWrapper interface {
-	Remove(id cron.EntryID)
-	AddJob(spec string, cmd cron.Job) (cron.EntryID, error)
-	Schedule(schedule cron.Schedule, cmd cron.Job) cron.EntryID
-	Entries() []cron.Entry
-	Start()
-	Stop()
 }
 
 type RedisWrapper interface {
@@ -194,7 +183,6 @@ type IntoolsEngineImpl struct {
 	DockerClient *dockerapi.Client
 	DockerHost   string
 	RedisClient  RedisWrapper
-	Cron         CronWrapper
 }
 
 func (e *IntoolsEngineImpl) GetDockerClient() *dockerapi.Client {
@@ -215,10 +203,6 @@ func (e *IntoolsEngineImpl) GetRedisClient() RedisWrapper {
 		}
 	}
 	return e.RedisClient
-}
-
-func (e *IntoolsEngineImpl) GetCron() CronWrapper {
-	return e.Cron
 }
 
 var (

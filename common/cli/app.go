@@ -82,7 +82,7 @@ func runAction(c *cli.Context) {
 
 	log.WithFields(log.Fields{"image": image, "commands": cmd}).Debug("Launching...")
 	log.Warn("In command line, connector schedule is not available")
-	intools.Engine = &intools.IntoolsEngineImpl{DockerClient: dockerClient, DockerHost: host, RedisClient: redisClient, Cron: nil}
+	intools.Engine = &intools.IntoolsEngineImpl{DockerClient: dockerClient, DockerHost: host, RedisClient: redisClient}
 	connector := connectors.NewConnector(group, conn)
 	connector.Init(image, uint(timeout), 0, cmd)
 	groups.CreateGroup(group)

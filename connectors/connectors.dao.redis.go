@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/soprasteria/intools-engine/executors"
 	"github.com/soprasteria/intools-engine/intools"
-	"gopkg.in/robfig/cron.v2"
 )
 
 func GetRedisConnectorsKey(c *Connector) string {
@@ -26,10 +24,6 @@ func GetRedisrKey(g string, c string) string {
 
 func GetRedisConnectorConfKey(g string, c string) string {
 	return GetRedisrKey(g, c) + ":conf"
-}
-
-func GetRedisCronIdKey(g string, c string) string {
-	return GetRedisrKey(g, c) + ":cronId"
 }
 
 func RedisGetConnectors(group string) ([]string, error) {
@@ -62,30 +56,11 @@ func RedisGetConnector(group string, connector string) (*Connector, error) {
 	return c, nil
 }
 
-func RedisGetConnectorCronId(group string, connector string) (cron.EntryID, error) {
-	r := intools.Engine.GetRedisClient()
-	log.Debugf("Fetching cronId for %s:%s from redis", group, connector)
-	key := GetRedisCronIdKey(group, connector)
-	cronId := r.Get(key)
-	stCronId := cronId.Val()
-	if cronId.Err() != nil {
-		log.WithError(cronId.Err()).Error("Redis command failed")
-		return 0, errors.New("Unable to fetch connectors cronId " + group + "/" + connector + ":" + cronId.Err().Error())
-	}
-
-	ret, err := strconv.Atoi(stCronId)
-	if err != nil {
-		log.Error("Cannot convert cronId to interged")
-		log.Error(stCronId)
-		return 0, err
-	}
-	return cron.EntryID(ret), nil
-}
-
 func RedisSaveConnector(c *Connector) error {
 	r := intools.Engine.GetRedisClient()
 	log.Debugf("Saving %s to redis", c.Group)
 	multi := r.Multi()
+	defer multi.Close()
 	_, err := multi.Exec(func() error {
 		multi.LRem(GetRedisrKey(c.Group, c.Name), 0, c.Group)
 		multi.LPush(GetRedisrKey(c.Group, c.Name), c.Group)
@@ -101,9 +76,9 @@ func RedisRemoveConnector(c *Connector) error {
 	r := intools.Engine.GetRedisClient()
 	log.Debugf("Removing %s:%s from redis", c.Group, c.Name)
 	multi := r.Multi()
+	defer multi.Close()
 	_, err := multi.Exec(func() error {
 		multi.Del(GetRedisConnectorConfKey(c.Group, c.Name))
-		multi.Del(GetRedisCronIdKey(c.Group, c.Name))
 		multi.Del(GetRedisExecutorKey(c))
 		multi.Del(GetRedisResultKey(c))
 		multi.Del(GetRedisConnectorsKey(c))
@@ -125,24 +100,17 @@ func GetRedisResultKey(c *Connector) string {
 
 func RedisSaveExecutor(c *Connector, exec *executors.Executor) error {
 	r := intools.Engine.GetRedisClient()
-	log.Debugf("Saving %s:%s to redis", c.GetContainerName(), exec.ContainerId)
-	cmd := r.LPush(GetRedisExecutorKey(c), exec.GetJSON())
+	log.WithField("containerName", c.GetContainerName()).WithField("containerId", exec.ContainerId).Debug("Saving execution of connector to Redis")
+	cmd := r.Set(GetRedisExecutorKey(c), exec.GetJSON(), 0)
 	if exec.Valid {
-		_ = r.LPush(GetRedisResultKey(c), exec.GetResult())
+		_ = r.Set(GetRedisResultKey(c), exec.GetResult(), 0)
 	}
-	return cmd.Err()
-}
-
-func RedisSaveCronId(c *Connector, cronId cron.EntryID) error {
-	r := intools.Engine.GetRedisClient()
-	log.Debugf("Saving cronId %s:%s to redis", c.GetContainerName(), cronId)
-	cmd := r.Set(GetRedisCronIdKey(c.Group, c.Name), strconv.Itoa(int(cronId)), 0)
 	return cmd.Err()
 }
 
 func RedisGetLastExecutor(c *Connector) (string, error) {
 	r := intools.Engine.GetRedisClient()
-	cmd := r.LIndex(GetRedisExecutorKey(c), 0)
+	cmd := r.Get(GetRedisExecutorKey(c))
 	if cmd.Err() != nil {
 		return "", cmd.Err()
 	}
