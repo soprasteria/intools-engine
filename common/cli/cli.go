@@ -16,6 +16,7 @@ func NewApp() *cli.App {
 			Name:   "host, H",
 			Usage:  "Docker host",
 			EnvVar: "DOCKER_HOST",
+			Value:  "unix:///var/run/docker.sock",
 		},
 		cli.StringFlag{
 			Name:   "cert, C",

@@ -12,25 +12,7 @@ import (
 	"github.com/soprasteria/intools-engine/common/websocket"
 	"github.com/soprasteria/intools-engine/executors"
 	"github.com/soprasteria/intools-engine/intools"
-	"gopkg.in/robfig/cron.v2"
 )
-
-func InitSchedule(c *Connector) cron.EntryID {
-	if intools.Engine.GetCron() != nil {
-		crontab := fmt.Sprintf("@every %dm", c.Refresh)
-		log.Debugf("Schedule %s:%s %s", c.Group, c.Name, crontab)
-		entryId, _ := intools.Engine.GetCron().AddJob(crontab, c)
-		return entryId
-	}
-	return 0
-}
-
-func RemoveScheduleJob(entryId cron.EntryID) {
-	if intools.Engine.GetCron() != nil {
-		log.Debugf("Remove schedule job with cronId: %s", entryId)
-		intools.Engine.GetCron().Remove(entryId)
-	}
-}
 
 func Exec(connector *Connector) (*executors.Executor, error) {
 	executor := &executors.Executor{}
@@ -94,7 +76,7 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 	wg.Add(1)
 
 	executor.ContainerId = container.ID()[:11]
-	log.Infof("%s [/%s] successfully started", executor.ContainerId, connector.GetContainerName())
+	log.WithField("containerId", executor.ContainerId).WithField("containerName", connector.GetContainerName()).Info("Container successfully started")
 	log.Debug(executor.ContainerId + " will be stopped after " + fmt.Sprint(connector.Timeout) + " seconds")
 	//Trigger stop of the container after the timeout
 	intools.Engine.GetDockerClient().Docker.StopContainer(container.ID(), connector.Timeout)

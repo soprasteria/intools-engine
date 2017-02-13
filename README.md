@@ -4,13 +4,8 @@
 
 ## Development Dependencies
 ````
-go get -u "github.com/codegangsta/cli"
-go get -u "github.com/gin-gonic/gin"
-go get -u "gopkg.in/robfig/cron.v2"
-go get -u "github.com/soprasteria/dockerapi"
-go get -u "gopkg.in/redis.v3"
-go get -u "github.com/gorilla/websocket"
-go get -u "github.com/gin-gonic/contrib/expvar"
+go get -u github.com/kardianos/govendor
+govendor sync
 ````
 ## Environment Dependencies
  - Docker Host (version 1.5 min)
