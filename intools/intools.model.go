@@ -3,6 +3,7 @@ package intools
 import (
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/soprasteria/dockerapi"
 	"github.com/soprasteria/intools-engine/common/utils"
 	. "gopkg.in/redis.v3"
@@ -11,10 +12,11 @@ import (
 type IntoolsEngine interface {
 	GetDockerClient() *dockerapi.Client
 	GetDockerHost() string
-	GetRedisClient() RedisWrapper
+	GetRedisClient() (RedisWrapper, error)
 }
 
 type RedisWrapper interface {
+	Close() error
 	Process(cmd Cmder)
 	Auth(password string) *StatusCmd
 	Echo(message string) *StringCmd
@@ -193,16 +195,16 @@ func (e *IntoolsEngineImpl) GetDockerHost() string {
 	return e.DockerHost
 }
 
-func (e *IntoolsEngineImpl) GetRedisClient() RedisWrapper {
-	pong, _ := e.RedisClient.Ping().Result()
-	if pong != "PONG" {
-		var err error
-		e.RedisClient, err = utils.GetRedisClient()
-		if err != nil {
-			panic(err)
-		}
+func (e *IntoolsEngineImpl) GetRedisClient() (RedisWrapper, error) {
+	log.Debug("Getting redis client")
+	client, err := utils.GetRedisClient()
+	if err != nil {
+		return nil, err
 	}
-	return e.RedisClient
+	log.WithField("client", client).Debug("Connected to redis client")
+	e.RedisClient = client
+
+	return e.RedisClient, nil
 }
 
 var (

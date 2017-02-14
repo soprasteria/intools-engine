@@ -27,7 +27,12 @@ func GetRedisConnectorConfKey(g string, c string) string {
 }
 
 func RedisGetConnectors(group string) ([]string, error) {
-	r := intools.Engine.GetRedisClient()
+	r, err := intools.Engine.GetRedisClient()
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+
 	key := fmt.Sprintf("intools:groups:%s:connectors", group)
 	len, err := r.LLen(key).Result()
 	if err != nil {
@@ -37,17 +42,21 @@ func RedisGetConnectors(group string) ([]string, error) {
 }
 
 func RedisGetConnector(group string, connector string) (*Connector, error) {
-	r := intools.Engine.GetRedisClient()
+	r, err := intools.Engine.GetRedisClient()
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
 	log.Debugf("Loading %s:%s from redis", group, connector)
 	key := GetRedisConnectorConfKey(group, connector)
 	cmd := r.Get(key)
 	jsonCmd := cmd.Val()
 	if cmd.Err() != nil {
 		log.WithError(cmd.Err()).Error("Redis command failed")
-		return nil, errors.New("Unable to load connectors " + group + "/" + connector + ":" + cmd.Err().Error())
+		return nil, errors.New("Unable to load connectors " + group + "/" + connector + " -> " + cmd.Err().Error())
 	}
 	c := &Connector{}
-	err := json.Unmarshal([]byte(jsonCmd), c)
+	err = json.Unmarshal([]byte(jsonCmd), c)
 	if err != nil {
 		log.Error("JSON Unmarshall failed with following value")
 		log.Error(jsonCmd)
@@ -57,11 +66,15 @@ func RedisGetConnector(group string, connector string) (*Connector, error) {
 }
 
 func RedisSaveConnector(c *Connector) error {
-	r := intools.Engine.GetRedisClient()
+	r, err := intools.Engine.GetRedisClient()
+	if err != nil {
+		return err
+	}
+	defer r.Close()
 	log.Debugf("Saving %s to redis", c.Group)
 	multi := r.Multi()
 	defer multi.Close()
-	_, err := multi.Exec(func() error {
+	_, err = multi.Exec(func() error {
 		multi.LRem(GetRedisrKey(c.Group, c.Name), 0, c.Group)
 		multi.LPush(GetRedisrKey(c.Group, c.Name), c.Group)
 		multi.LRem(GetRedisConnectorsKey(c), 0, c.Name)
@@ -73,11 +86,15 @@ func RedisSaveConnector(c *Connector) error {
 }
 
 func RedisRemoveConnector(c *Connector) error {
-	r := intools.Engine.GetRedisClient()
+	r, err := intools.Engine.GetRedisClient()
+	if err != nil {
+		return err
+	}
+	defer r.Close()
 	log.Debugf("Removing %s:%s from redis", c.Group, c.Name)
 	multi := r.Multi()
 	defer multi.Close()
-	_, err := multi.Exec(func() error {
+	_, err = multi.Exec(func() error {
 		multi.Del(GetRedisConnectorConfKey(c.Group, c.Name))
 		multi.Del(GetRedisExecutorKey(c))
 		multi.Del(GetRedisResultKey(c))
@@ -99,7 +116,11 @@ func GetRedisResultKey(c *Connector) string {
 }
 
 func RedisSaveExecutor(c *Connector, exec *executors.Executor) error {
-	r := intools.Engine.GetRedisClient()
+	r, err := intools.Engine.GetRedisClient()
+	if err != nil {
+		return err
+	}
+	defer r.Close()
 	log.WithField("containerName", c.GetContainerName()).WithField("containerId", exec.ContainerId).Debug("Saving execution of connector to Redis")
 	cmd := r.Set(GetRedisExecutorKey(c), exec.GetJSON(), 0)
 	if exec.Valid {
@@ -109,7 +130,11 @@ func RedisSaveExecutor(c *Connector, exec *executors.Executor) error {
 }
 
 func RedisGetLastExecutor(c *Connector) (string, error) {
-	r := intools.Engine.GetRedisClient()
+	r, err := intools.Engine.GetRedisClient()
+	if err != nil {
+		return "", err
+	}
+	defer r.Close()
 	cmd := r.Get(GetRedisExecutorKey(c))
 	if cmd.Err() != nil {
 		return "", cmd.Err()
