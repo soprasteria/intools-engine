@@ -73,20 +73,29 @@ func GetRedis(c *cli.Context) (*redis.Client, error) {
 		IdleTimeout:  10 * time.Minute,
 		ReadTimeout:  2 * time.Minute,
 		WriteTimeout: 1 * time.Minute,
+		MaxRetries:   10,
+		DialTimeout:  1 * time.Minute,
 	}
 
 	client, err := GetRedisClient()
 
-	log.WithFields(log.Fields{"http": c.GlobalString("redis"), "db": c.GlobalString("redis-db")}).Info("Connected to Redis Host")
+	if err != nil {
+		log.WithError(err).Error("Unable to get Redis client")
+	} else {
+		log.WithFields(log.Fields{"http": c.GlobalString("redis"), "db": c.GlobalString("redis-db")}).Info("Connected to Redis Host")
+	}
+
 	return client, err
 }
 
 func GetRedisClient() (*redis.Client, error) {
 	client := redis.NewClient(redisOptions)
 
+	log.WithField("addr", redisOptions.Addr).Debug("redis client")
+
 	_, err := client.Ping().Result()
 	if err != nil {
-		log.Error("Unable to connect to redis host")
+		log.WithError(err).Error("Unable to connect to redis host")
 		return nil, err
 	}
 
