@@ -91,8 +91,6 @@ func GetRedis(c *cli.Context) (*redis.Client, error) {
 func GetRedisClient() (*redis.Client, error) {
 	client := redis.NewClient(redisOptions)
 
-	log.WithField("addr", redisOptions.Addr).Debug("redis client")
-
 	_, err := client.Ping().Result()
 	if err != nil {
 		log.WithError(err).Error("Unable to connect to redis host")
