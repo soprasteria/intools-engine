@@ -102,7 +102,7 @@
 			"revisionTime": "2017-01-26T09:29:12Z"
 		},
 		{
-			"checksumSHA1": "yaC0MhHtv8iaVuW25WxQf3x5hI4=",
+			"checksumSHA1": "CaZmlYwv9hfB53fpqURwGGvwmL8=",
 			"path": "github.com/docker/docker/pkg/archive",
 			"revision": "bc18cfa3f37736b0143d0f3f8fe527923c8a966e",
 			"revisionTime": "2017-01-26T09:29:12Z"
@@ -279,10 +279,10 @@
 			"revisionTime": "2017-01-17T12:02:56Z"
 		},
 		{
-			"checksumSHA1": "379ek9wIVJLiiEcLeAsB7BiCvK0=",
+			"checksumSHA1": "No2E4qfQLhff05x9v5bfD2rGaUI=",
 			"path": "github.com/soprasteria/dockerapi",
-			"revision": "c8a2554a4e70e8558f83da6b8fa966c632113572",
-			"revisionTime": "2016-09-30T14:29:56Z"
+			"revision": "d3f462c5c90bf433879795c8c9220e3ca4d670da",
+			"revisionTime": "2017-05-09T15:59:14Z"
 		},
 		{
 			"checksumSHA1": "4Te+hE2MFa6grw/Vt90gYhOH7qs=",
@@ -303,7 +303,7 @@
 			"revisionTime": "2017-01-14T04:22:49Z"
 		},
 		{
-			"checksumSHA1": "uTQtOqR0ePMMcvuvAIksiIZxhqU=",
+			"checksumSHA1": "Xhsm+TevJogC8U4sG6FO+czBMps=",
 			"path": "golang.org/x/sys/unix",
 			"revision": "d75a52659825e75fff6158388dddc6a5b04f9ba5",
 			"revisionTime": "2016-12-14T18:38:57Z"
