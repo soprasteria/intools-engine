@@ -21,7 +21,7 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 	go SaveConnector(connector)
 
 	//Get all containers
-	containers, err := intools.Engine.GetDockerClient().ListContainers()
+	simpleContainers, err := intools.Engine.GetDockerClient().ListContainers()
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -30,12 +30,10 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 	//Searching for the container with the same name
 	containerExists := false
 	previousContainerID := "-1"
-	for _, c := range containers {
-		for _, n := range c.Container.Names {
-			if n == fmt.Sprintf("/%s", connector.GetContainerName()) {
-				containerExists = true
-				previousContainerID = c.ID()
-			}
+	for _, c := range simpleContainers.GetAll() {
+		if c.Name() == fmt.Sprintf("/%s", connector.GetContainerName()) {
+			containerExists = true
+			previousContainerID = c.ID()
 		}
 	}
 
@@ -64,7 +62,9 @@ func Exec(connector *Connector) (*executors.Executor, error) {
 
 	// Starting container
 	log.Info("Starting container " + connector.GetContainerName())
-	err = container.Run()
+	// we don't want to force pulling of images in order to support projects which don't have a registry because images are only local in that case
+	forcePull := false
+	err = container.Run(forcePull)
 	if err != nil {
 		log.Error("Cannot start container " + connector.GetContainerName())
 		log.Error(err)
