@@ -23,6 +23,10 @@ govendor sync
 
 ## How to use
 ### Command line
+ - Build the application
+````
+ go build
+````
  - Run the server
 ````
  ./intools-engine daemon
