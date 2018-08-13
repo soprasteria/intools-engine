@@ -1,45 +1,60 @@
 node{
-  stage 'Setup'
+
+  cleanWs()
+
+  String gitCredentialsId='Github_DeployKey_IntoolsEngine'
+
+  stage('Setup'){
     properties(
       [[$class: 'jenkins.model.BuildDiscarderProperty',strategy:[$class: 'LogRotator', numToKeepStr: '5', artifactNumToKeepStr: '5']],
       [$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'CUSTOM_VERSION', defaultValue: '',
-      description: 'Set a custom version if you want to manually set the version tag to a specific value (e.g. bump to a major version). Leave empty if you want to automatically bump the patch version.']]]]
+      description: '[Only used on master branch] Set a custom version if you want to manually set the version tag to a specific value (e.g. bump to a major version). Leave empty if you want to automatically bump the patch version or if you are building develop.']]]]
       )
-    env.INTOOLS_BUILD = "src/github.com/soprasteria/intools-engine"
+   // Initializing workspace
+   env.CI = true // used to run commands without asking questions to users
     env.GOROOT = tool '1.7.1'
     env.GOPATH = pwd()
-    env.PATH = "${env.GOROOT}/bin:${env.GOPATH}/bin:${env.PATH}"
-    // clean build
+    env.GOBIN = "${GOPATH}/bin"
+    env.PATH = "${GOROOT}/bin:${GOBIN}:${PATH}"
+    env.WORKSPACE="${GOPATH}/src/github.com/soprasteria/intools-engine"
+    
+    // get Govendor
     sh '''
-      rm -rf src
-      go get -u github.com/kardianos/govendor
+       go get -u github.com/kardianos/govendor
     '''
-  stage 'Checkout'
-    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '9ec20a0a-6264-4217-8ac0-11df115c70cc', passwordVariable: 'GITHUB_ACCESS_TOKEN', usernameVariable: 'GITHUB_LOGIN']]) {
+    
+  }
+
+  stage ('Checkout'){
       sh 'git config --global credential.helper cache'
       // Checkout the given branch in a sub directory
       checkout([$class: 'GitSCM',
                 branches: [[name: '${BRANCH_NAME}']],
-                extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'src/github.com/soprasteria/intools-engine'], [$class: 'LocalBranch', localBranch: '${BRANCH_NAME}']],
-                userRemoteConfigs: [[url: 'git@github.com:soprasteria/intools-engine.git']]])
-    }
+                extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: env.WORKSPACE], [$class: 'LocalBranch', localBranch: '${BRANCH_NAME}']],
+                userRemoteConfigs: [[
+                  credentialsId: "${gitCredentialsId}",
+                  url: 'git@github.com:soprasteria/intools-engine.git'
+              ]]])
+  }
 
-      stage 'Compile'
+  stage('Compile'){
         sh '''
-          cd ${GOPATH}/${INTOOLS_BUILD}
+          cd "${WORKSPACE}"
           govendor sync -v
           CGO_ENABLED=0 go build -a -installsuffix cgo
         '''
-      stage 'Test'
+   }
+  stage ('Test') {
         sh '''
-          cd ${GOPATH}/${INTOOLS_BUILD}
+          cd "${WORKSPACE}"
           govendor test +local
         '''
+  }
 
-    dir(env.INTOOLS_BUILD) {
-      if (env.BRANCH_NAME == "master") {
+  if (env.BRANCH_NAME == "master") {
+    dir(env.WORKSPACE) {
         withCredentials([[$class: 'StringBinding', credentialsId: '382b84d3-2bb3-4fca-8d13-7e874c6339a2', variable: 'ARTIFACTORY_URL'], [$class: 'UsernamePasswordBinding', credentialsId: 'cc2089e7-c24c-4048-8311-7376c1bab694', variable: 'ARTIFACTORY_CREDENTIALS']]) {
-          stage 'Publish'
+          stage ('Publish'){
             sh '''
               if [ -z "''' + CUSTOM_VERSION + '''"]; then
                 version=$(cat version)
@@ -75,7 +90,11 @@ node{
               git checkout master
               git reset --hard origin/master
             '''
+          }
         }
       }
   }
+
+
+  cleanWs()
 }
