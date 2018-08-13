@@ -1,4 +1,9 @@
 node{
+
+  cleanWs()
+
+  String gitCredentialsId='Github_DeployKey_IntoolsEngine'
+
   stage 'Setup'
     properties(
       [[$class: 'jenkins.model.BuildDiscarderProperty',strategy:[$class: 'LogRotator', numToKeepStr: '5', artifactNumToKeepStr: '5']],
@@ -14,15 +19,16 @@ node{
       rm -rf src
       go get -u github.com/kardianos/govendor
     '''
-  stage 'Checkout'
-    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '9ec20a0a-6264-4217-8ac0-11df115c70cc', passwordVariable: 'GITHUB_ACCESS_TOKEN', usernameVariable: 'GITHUB_LOGIN']]) {
+  stage 'Checkout'  
       sh 'git config --global credential.helper cache'
       // Checkout the given branch in a sub directory
       checkout([$class: 'GitSCM',
                 branches: [[name: '${BRANCH_NAME}']],
                 extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'src/github.com/soprasteria/intools-engine'], [$class: 'LocalBranch', localBranch: '${BRANCH_NAME}']],
-                userRemoteConfigs: [[url: 'git@github.com:soprasteria/intools-engine.git']]])
-    }
+                userRemoteConfigs: [[
+                  credentialsId: "${gitCredentialsId}",
+                  url: 'git@github.com:soprasteria/intools-engine.git'
+              ]]])
 
       stage 'Compile'
         sh '''
@@ -78,4 +84,7 @@ node{
         }
       }
   }
+
+
+  cleanWs()
 }
