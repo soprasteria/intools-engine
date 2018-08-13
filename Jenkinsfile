@@ -10,21 +10,19 @@ node{
       [$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'CUSTOM_VERSION', defaultValue: '',
       description: 'Set a custom version if you want to manually set the version tag to a specific value (e.g. bump to a major version). Leave empty if you want to automatically bump the patch version.']]]]
       )
-    env.INTOOLS_BUILD = "src/github.com/soprasteria/intools-engine"
+   // Initializing workspace
+   env.CI = true // used to run commands without asking questions to users
     env.GOROOT = tool '1.7.1'
     env.GOPATH = pwd()
-    env.PATH = "${env.GOROOT}/bin:${env.GOPATH}/bin:${env.PATH}"
-    // clean build
-    sh '''
-      rm -rf src
-      go get -u github.com/kardianos/govendor
-    '''
+    env.PATH = "${GOROOT}/bin:${GOBIN}:${PATH}"
+    env.WORKSPACE="${GOPATH}/src/github.com/soprasteria/intools-engine"
+
   stage 'Checkout'  
       sh 'git config --global credential.helper cache'
       // Checkout the given branch in a sub directory
       checkout([$class: 'GitSCM',
                 branches: [[name: '${BRANCH_NAME}']],
-                extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'src/github.com/soprasteria/intools-engine'], [$class: 'LocalBranch', localBranch: '${BRANCH_NAME}']],
+                extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: env.WORKSPACE], [$class: 'LocalBranch', localBranch: '${BRANCH_NAME}']],
                 userRemoteConfigs: [[
                   credentialsId: "${gitCredentialsId}",
                   url: 'git@github.com:soprasteria/intools-engine.git'
@@ -32,17 +30,17 @@ node{
 
       stage 'Compile'
         sh '''
-          cd ${GOPATH}/${INTOOLS_BUILD}
+          cd ${WORKSPACE}
           govendor sync -v
           CGO_ENABLED=0 go build -a -installsuffix cgo
         '''
       stage 'Test'
         sh '''
-          cd ${GOPATH}/${INTOOLS_BUILD}
+          cd ${WORKSPACE}
           govendor test +local
         '''
 
-    dir(env.INTOOLS_BUILD) {
+    dir(env.WORKSPACE) {
       if (env.BRANCH_NAME == "master") {
         withCredentials([[$class: 'StringBinding', credentialsId: '382b84d3-2bb3-4fca-8d13-7e874c6339a2', variable: 'ARTIFACTORY_URL'], [$class: 'UsernamePasswordBinding', credentialsId: 'cc2089e7-c24c-4048-8311-7376c1bab694', variable: 'ARTIFACTORY_CREDENTIALS']]) {
           stage 'Publish'
