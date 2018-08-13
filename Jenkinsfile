@@ -4,7 +4,7 @@ node{
 
   String gitCredentialsId='Github_DeployKey_IntoolsEngine'
 
-  stage 'Setup'
+  stage('Setup'){
     properties(
       [[$class: 'jenkins.model.BuildDiscarderProperty',strategy:[$class: 'LogRotator', numToKeepStr: '5', artifactNumToKeepStr: '5']],
       [$class: 'ParametersDefinitionProperty', parameterDefinitions: [[$class: 'StringParameterDefinition', name: 'CUSTOM_VERSION', defaultValue: '',
@@ -17,8 +17,15 @@ node{
     env.GOBIN = "${GOPATH}/bin"
     env.PATH = "${GOROOT}/bin:${GOBIN}:${PATH}"
     env.WORKSPACE="${GOPATH}/src/github.com/soprasteria/intools-engine"
+    
+    // get Govendor
+    sh '''
+       go get -u github.com/kardianos/govendor
+    '''
+    
+  }
 
-  stage 'Checkout'  
+  stage ('Checkout'){
       sh 'git config --global credential.helper cache'
       // Checkout the given branch in a sub directory
       checkout([$class: 'GitSCM',
@@ -28,23 +35,26 @@ node{
                   credentialsId: "${gitCredentialsId}",
                   url: 'git@github.com:soprasteria/intools-engine.git'
               ]]])
+  }
 
-      stage 'Compile'
+  stage('Compile'){
         sh '''
-          cd ${WORKSPACE}
+          cd "${WORKSPACE}"
           govendor sync -v
           CGO_ENABLED=0 go build -a -installsuffix cgo
         '''
-      stage 'Test'
+   }
+  stage ('Test') {
         sh '''
-          cd ${WORKSPACE}
+          cd "${WORKSPACE}"
           govendor test +local
         '''
+  }
 
+  if (env.BRANCH_NAME == "master") {
     dir(env.WORKSPACE) {
-      if (env.BRANCH_NAME == "master") {
         withCredentials([[$class: 'StringBinding', credentialsId: '382b84d3-2bb3-4fca-8d13-7e874c6339a2', variable: 'ARTIFACTORY_URL'], [$class: 'UsernamePasswordBinding', credentialsId: 'cc2089e7-c24c-4048-8311-7376c1bab694', variable: 'ARTIFACTORY_CREDENTIALS']]) {
-          stage 'Publish'
+          stage ('Publish'){
             sh '''
               if [ -z "''' + CUSTOM_VERSION + '''"]; then
                 version=$(cat version)
@@ -80,6 +90,7 @@ node{
               git checkout master
               git reset --hard origin/master
             '''
+          }
         }
       }
   }
