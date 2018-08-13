@@ -14,6 +14,7 @@ node{
    env.CI = true // used to run commands without asking questions to users
     env.GOROOT = tool '1.7.1'
     env.GOPATH = pwd()
+    env.GOBIN = "${GOPATH}/bin"
     env.PATH = "${GOROOT}/bin:${GOBIN}:${PATH}"
     env.WORKSPACE="${GOPATH}/src/github.com/soprasteria/intools-engine"
 
