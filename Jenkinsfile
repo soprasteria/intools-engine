@@ -57,11 +57,11 @@ node{
     dir(env.WORKSPACE) {
         def version = (CUSTOM_VERSION?.trim())?CUSTOM_VERSION:sh(returnStdout: true, script:'cat version')
         version = version.trim()
-        withEnv(["VERSION=${version}"]){
+        def tarname = "intools-engine-${version}.tgz"
+        withEnv(["VERSION=${version}","TARNAME=${tarname}"]){
           stage ('Publish'){
             sh '''
-              tarname=intools-engine-${VERSION}.tgz
-              tar -cvzf $tarname intools-engine
+              tar -cvzf ${TARNAME} intools-engine
             '''
 
             sshagent(credentials: ["${gitCredentialsId}"]){
@@ -73,8 +73,8 @@ node{
             withCredentials([[$class: 'StringBinding', credentialsId: '382b84d3-2bb3-4fca-8d13-7e874c6339a2', variable: 'ARTIFACTORY_URL'], [$class: 'UsernamePasswordBinding', credentialsId: 'cc2089e7-c24c-4048-8311-7376c1bab694', variable: 'ARTIFACTORY_CREDENTIALS']]) {
               sh '''
                 current_dir=`pwd`
-                export FILE="$current_dir/$tarname"
-                curl -v -u$ARTIFACTORY_CREDENTIALS --data-binary @"${FILE}" -X PUT $ARTIFACTORY_URL/prj-cdk-releases/com/soprasteria/cdk/intools2/intools-engine/$tarname
+                export FILE="$current_dir/${TARNAME}"
+                curl -v -u$ARTIFACTORY_CREDENTIALS --data-binary @"${FILE}" -X PUT $ARTIFACTORY_URL/prj-cdk-releases/com/soprasteria/cdk/intools2/intools-engine/${TARNAME}
               '''
             }
           }
