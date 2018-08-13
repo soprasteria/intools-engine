@@ -24,6 +24,7 @@ node{
     '''
     
   }
+  
 
   stage ('Checkout'){
       sh 'git config --global credential.helper cache'
@@ -36,7 +37,7 @@ node{
                   url: 'git@github.com:soprasteria/intools-engine.git'
               ]]])
   }
-
+  
   stage('Compile'){
         sh '''
           cd "${WORKSPACE}"
@@ -50,46 +51,55 @@ node{
           govendor test +local
         '''
   }
+  
 
   if (env.BRANCH_NAME == "master") {
     dir(env.WORKSPACE) {
-        withCredentials([[$class: 'StringBinding', credentialsId: '382b84d3-2bb3-4fca-8d13-7e874c6339a2', variable: 'ARTIFACTORY_URL'], [$class: 'UsernamePasswordBinding', credentialsId: 'cc2089e7-c24c-4048-8311-7376c1bab694', variable: 'ARTIFACTORY_CREDENTIALS']]) {
+        def version = (CUSTOM_VERSION?.trim())?CUSTOM_VERSION:sh(returnStdout: true, script:'cat version')
+        version = version.trim()
+        withEnv(["VERSION=${version}"]){
           stage ('Publish'){
             sh '''
-              if [ -z "''' + CUSTOM_VERSION + '''"]; then
-                version=$(cat version)
-              else
-                version=''' + CUSTOM_VERSION + '''
-              fi
-
-              tarname=intools-engine-$version.tgz
+              tarname=intools-engine-${VERSION}.tgz
               tar -cvzf $tarname intools-engine
-
-              git tag -af $version -m "version $version"
-              git push -f origin $version
-
-              current_dir=`pwd`
-              export FILE="$current_dir/$tarname"
-              curl -v -u$ARTIFACTORY_CREDENTIALS --data-binary @"${FILE}" -X PUT $ARTIFACTORY_URL/prj-cdk-releases/com/soprasteria/cdk/intools2/intools-engine/$tarname
-
-              majorversion=`echo $version | cut -d '.' -f 1`
-              minorversion=`echo $version | cut -d '.' -f 2`
-              patchversion=$((`echo $version | cut -d '.' -f 3` + 1))
-              newversion="$majorversion.$minorversion.$patchversion"
-
-              echo "Released version" $version
-              echo "New version" $newversion
-
-              git fetch
-              git checkout develop
-              echo $newversion > version
-              git status
-              git commit -a -m "chore: Bump to version $newversion"
-              git status
-              git push origin develop
-              git checkout master
-              git reset --hard origin/master
             '''
+
+            sshagent(credentials: ["${gitCredentialsId}"]){
+              sh '''
+                git tag -af ${VERSION} -m "version ${VERSION}"
+                git push -f origin ${VERSION}
+              '''
+            }
+            withCredentials([[$class: 'StringBinding', credentialsId: '382b84d3-2bb3-4fca-8d13-7e874c6339a2', variable: 'ARTIFACTORY_URL'], [$class: 'UsernamePasswordBinding', credentialsId: 'cc2089e7-c24c-4048-8311-7376c1bab694', variable: 'ARTIFACTORY_CREDENTIALS']]) {
+              sh '''
+                current_dir=`pwd`
+                export FILE="$current_dir/$tarname"
+                curl -v -u$ARTIFACTORY_CREDENTIALS --data-binary @"${FILE}" -X PUT $ARTIFACTORY_URL/prj-cdk-releases/com/soprasteria/cdk/intools2/intools-engine/$tarname
+              '''
+            }
+          }
+          stage ('Update Version on SCM'){
+            sshagent(credentials: ["${gitCredentialsId}"]){
+              sh '''
+                majorversion=`echo ${VERSION} | cut -d '.' -f 1`
+                minorversion=`echo ${VERSION} | cut -d '.' -f 2`
+                patchversion=$((`echo ${VERSION} | cut -d '.' -f 3` + 1))
+                newversion="$majorversion.$minorversion.$patchversion"
+
+                echo "Released version" ${VERSION}
+                echo "New version" $newversion
+
+                git fetch
+                git checkout develop
+                echo $newversion > version
+                git status
+                git commit -a -m "chore: Bump to version $newversion"
+                git status
+                git push origin develop
+                git checkout master
+                git reset --hard origin/master
+              '''
+             }
           }
         }
       }
